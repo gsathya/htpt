@@ -159,12 +159,15 @@ Commit messages
   As a general rule, your messages should start with a single line
   that’s no more than about 50 characters and that describes the
   changeset concisely, followed by a blank line, followed by a more
-  detailed explanation
+  detailed explanation.
 
-* Break large changes into smaller commits
+* Break large changes into smaller commits.
 
 * Make commits as self contained as possible -- if you're moving
-  around code and changing logic, break it into smaller commits
+  around code and changing logic, break it into smaller commits.
+
+* It’s also a good idea to use the imperative present tense in these
+  messages.
 
 * Example:
 ----
