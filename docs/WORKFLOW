@@ -1,0 +1,48 @@
+Workflow
+========
+
+1) Fork the repo and clone it locally
+ $ git clone https://github.com/<user-name>/htpt.git
+
+2) Add the remote to the original repo
+ $ git remote add gsathya https://github.com/gsathya/htpt.git
+
+3) Create a new branch
+ $ git checkout -b bugxxx
+
+4) Make some changes
+ $ emacs htptxx.py
+ 
+5) Stage the changed files
+ $ git add <changed-files>
+
+6) Pull in changes that might have happened while you were developing;
+   if there any conflicts, fix them
+ $ git pull --rebase gsathya master
+
+7) Commit your changes
+ $ git commit
+  
+8) Push your changes to your repo
+ $ git push origin bugxxx
+
+9) Create a pull request on github, once the pull request is merged, go
+   back to your master branch
+ $ git checkout master
+
+10) Pull in the recent changes
+ $ git pull --rebase gsathya master
+
+11) Repeat step 3
+
+12) ???
+
+13) PROFIT.
+
+Notes
+=====
+
+* Your master branch must always be the upto date with the canonical
+  master(gsathya/master) -- it should not be ahead or behind.
+
+* Name your branches with some context -- bugxxx is fine
