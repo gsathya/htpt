@@ -46,3 +46,9 @@ Notes
   master(gsathya/master) -- it should not be ahead or behind.
 
 * Name your branches with some context -- bugxxx is fine
+
+Further Reading
+===============
+
+* https://www.atlassian.com/git/workflows#!workflow-feature-branch
+* http://nvie.com/posts/a-successful-git-branching-model/
