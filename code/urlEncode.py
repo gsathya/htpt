@@ -5,7 +5,8 @@
 #imports
 import binascii
 import re
-from random import choice
+from base64 import urlsafe_b64encode, urlsafe_b64decode
+from random import choice, randint
 
 #constants
 AVAILABLE_TYPES=['market', 'baidu', 'google']
@@ -49,16 +50,77 @@ def encodeAsCookies(data):
   cookies = []
   while data != '':
     if len(data) > BYTES_PER_COOKIE:
-      encodeAsCookie(data[:BYTES_PER_COOKIE])
+      cookies.append(encodeAsCookie(data[:BYTES_PER_COOKIE]))
       data = data[BYTES_PER_COOKIE:]
     else:
-      encodeAsCookie(data[:len(data)])
+      cookies.append(encodeAsCookie(data[:len(data)]))
       data = ''
+  return cookies
 
 def encodeAsCookie(data):
-  """Hide data inside a cookie"""
-  #todo fill out this functino
-  return
+  """Hide data inside a cookie
+
+  Parameters: data- a string with fewer than 30 characters to encode
+
+  Returns: a string with the key value pair
+
+  Methods: will hide data in a cookie by storing the first 3-10
+  characters of data as a key and the rest of the data as the
+  value. All data will base64 encoded before it is placed in the url
+
+  Note: this is intended for communication from the client to the
+  server so we are sending back set cookies. If decide to use this for
+  server-> client communication, we will need to modify this code
+  """
+  if len(data) < 10 and len(data) > 5:
+    keyLen = 3
+  elif len(data) <= 5:
+    key = 'keyForPadding' #longer than 10 chars, so no need to escape
+    key = urlsafe_b64encode(key)
+    key = key.replace('=', '+')
+    value = urlsafe_b64encode(data)
+    cookie = 'Cookie: ' + key + '=' + value
+    return cookie
+  else:
+    keyLen = randint(3, 10)
+  key = data[:keyLen]
+  value = data[keyLen:]
+  key = urlsafe_b64encode(key)
+  key = key.replace('=', '+')
+  value = urlsafe_b64encode(value)
+  cookie = 'Cookie: ' + key + '=' + value
+  return cookie
+
+def decodeAsCookie(cookie):
+  """Decode data from inside a cookie
+
+  Parameters: cookie- the string of text representing the cookie. This
+  will be decoded into data.
+  
+  Returns: a string with the hidden data
+  
+  Methods: will do take out the key and value, decode them, and
+  concatenate them into the original string
+
+  Note: As with the encodeAsCookie function, this function is designed
+  to send data from the client to the server and modifications are
+  necessary for convincing traffic from server to client
+
+  """
+  pattern = 'Cookie: (?P<key>[a-zA-Z0-9+_\-/]+)=(?P<value>[a-zA-Z0-9+_=\-/]*)'
+  match = re.match(pattern, cookie)
+  key = match.group('key')
+  key = key.replace('+', '=')
+  value = match.group('value')
+  key = urlsafe_b64decode(key)
+  value = urlsafe_b64decode(value)
+  #In this case, the data needed padding because it was too
+  #short. Since this key is longer than 10 chars, it cannot occur
+  #naturally and does not need to be escaped
+  if key == 'keyForPadding':
+    key = ''
+  data = key + value
+  return data
 
 def pickDomain():
   """Pick a random domain from the list"""
@@ -135,9 +197,9 @@ def decode(protocolUnit):
   """
   url = protocolUnit['url']
   cookies = protocolUnit['cookie']
-  data = ''
+  data = []
   if isMarket(url):
-    data = decodeAsMarket(url)
+    data.append(decodeAsMarket(url))
   else:
     raise UrlEncodeError("Data does not match a known decodable type")
   for cookie in cookies:
