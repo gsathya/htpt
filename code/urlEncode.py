@@ -5,7 +5,7 @@
 #imports
 import binascii
 import re
-from random import randint
+from random import choice
 
 #constants
 AVAILABLE_TYPES=['market', 'baidu', 'google']
@@ -32,7 +32,8 @@ def encode(data, encodingType):
 
   """
   if encodingType not in AVAILABLE_TYPES:
-      raise(UrlEncodeError("Bad encoding type. Please refer to url-encode.AVAILABLE_TYPES for available options"))
+      raise(UrlEncodeError("Bad encoding type. Please refer to"
+                           "url-encode.AVAILABLE_TYPES for available options"))
 
   if encodingType == 'market':
     return encodeAsMarket(data)
@@ -47,8 +48,12 @@ def encodeAsCookies(data):
 
   cookies = []
   while data != '':
+    if len(data) > BYTES_PER_COOKIE:
       encodeAsCookie(data[:BYTES_PER_COOKIE])
       data = data[BYTES_PER_COOKIE:]
+    else:
+      encodeAsCookie(data[:len(data)])
+      data = ''
 
 def encodeAsCookie(data):
   """Hide data inside a cookie"""
@@ -58,7 +63,7 @@ def encodeAsCookie(data):
 def pickDomain():
   """Pick a random domain from the list"""
   domains = ['live.com', 'microsoft.com', 'baidu.com', 'hao123.com']
-  return domains[randint(0, len(domains)-1)]
+  return choice(domains)
 
 def pickRandomHexChar():
   """Pick a random hexadecimal character and return it"""
@@ -114,11 +119,11 @@ def decodeAsMarket(url):
   matches = re.search(pattern, url)
   data = matches.group('hash')
   # strip any padding
-  data = data.rstrip('ABCDEF')
+  data = data.strip('ABCDEF')
   data = binascii.unhexlify(data)
   return data
 
-def decode(data):
+def decode(protocolUnit):
   """Decode the given data after matching the url hiding format
 
   Parameters: data- the url and cookies to be decoded in the form of a
@@ -128,13 +133,13 @@ def decode(data):
   Returns: the decoded data in the form of a string
 
   """
-  url = data['url']
-  cookies = data['cookie']
-  retVal = ''
+  url = protocolUnit['url']
+  cookies = protocolUnit['cookie']
+  data = ''
   if isMarket(url):
-    retVal = decodeAsMarket(url)
+    data = decodeAsMarket(url)
   else:
     raise UrlEncodeError("Data does not match a known decodable type")
   for cookie in cookies:
-    retVal = retVal + decodeAsCookie(cookie)
-  return retVal
+    data.append(decodeAsCookie(cookie))
+  return ''.join(data)
