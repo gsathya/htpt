@@ -96,7 +96,7 @@ class TestUrlEncode(unittest.TestCase):
 
   def test_pickDomain(self):
     """Test that a domain is correctly returned"""
-    
+
     for iteration in range(5):
       domain = urlEncode.pickDomain()
       pattern = '[0-9a-zA-Z]*[.]com'
@@ -105,7 +105,7 @@ class TestUrlEncode(unittest.TestCase):
 
   def test_pickRandomHexChar(self):
     """Valdiate that the function retuns a valid hex char"""
-    
+
     characters = ['A','B','C','D','E','F']
     for i in range(50):
       char = urlEncode.pickRandomHexChar()
@@ -113,8 +113,8 @@ class TestUrlEncode(unittest.TestCase):
 
   def test_encodeAsMarket(self):
     """Verify that data are correctly stored in the url market form"""
-    
-    testData = ['some text', 'more text', 
+
+    testData = ['some text', 'more text',
                 'even more text that seems moderately longish']
     for datum in testData:
         output = urlEncode.encodeAsMarket(datum)
@@ -137,7 +137,7 @@ class TestUrlEncode(unittest.TestCase):
     """Verify that isMarket correctly identifies urls in the proper
     form"""
 
-    trueData = ['http://click.live.com?qs=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', 
+    trueData = ['http://click.live.com?qs=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
                 'http://click.google.com?qs=fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321']
     falseData = ['http://click.live.com?qs=123fad', 'fake', 'bad url', 'google.com']
     for datum in trueData:

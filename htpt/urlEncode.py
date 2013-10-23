@@ -95,9 +95,9 @@ def decodeAsCookie(cookie):
 
   Parameters: cookie- the string of text representing the cookie. This
   will be decoded into data.
-  
+
   Returns: a string with the hidden data
-  
+
   Methods: will do take out the key and value, decode them, and
   concatenate them into the original string
 
@@ -178,7 +178,7 @@ def decodeAsMarket(url):
   Returns: a string with the decoded data
 
   """
-  
+
   pattern = 'click.*\?qs=(?P<hash>[0-9a-fA-F]*)'
   matches = re.search(pattern, url)
   data = matches.group('hash')
