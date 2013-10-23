@@ -131,7 +131,7 @@ def pickRandomHexChar():
   """Pick a random hexadecimal character and return it"""
 
   characters = ['A','B','C','D','E','F']
-  return characters[randint(0, 5)]
+  return choice(characters)
 
 def encodeAsMarket(data):
   """
