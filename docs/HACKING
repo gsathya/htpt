@@ -190,3 +190,11 @@ Further paragraphs come after blank lines.
 
 For more information read
 http://git-scm.com/book/ch5-2.html#Commit-Guidelines
+
+White space
+-----------
+* Please don't leave any trailing whitespaces or any extra white
+  space.
+* Run M-x whitespace-cleanup before you commit
+* Set color.ui to be true in your gitconfig. Any extra white space
+  will show up when you do a git diff
