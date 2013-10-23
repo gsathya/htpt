@@ -6,7 +6,7 @@ import unittest
 import re
 import binascii
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-from random import randint
+from random import randint, choice
 
 import urlEncode
 
@@ -120,7 +120,7 @@ class TestUrlEncode(unittest.TestCase):
         output = urlEncode.encodeAsMarket(datum)
         testOutput = output['url']
         #verify that the output is in the correct form
-        pattern = '[a-zA-Z0-9.]*[.]com\?qs=(?P<hash>[0-9a-fA-F]*)'
+        pattern = 'http://[a-zA-Z0-9.]*[.]com\?qs=(?P<hash>[0-9a-fA-F]*)'
         matches = re.match(pattern, testOutput)
         self.assertNotEqual(matches, None)
         #verify that the output is actually the hex representation of
@@ -137,9 +137,9 @@ class TestUrlEncode(unittest.TestCase):
     """Verify that isMarket correctly identifies urls in the proper
     form"""
 
-    trueData = ['click.live.com?qs=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', 
-                'click.google.com?qs=fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321']
-    falseData = ['click.live.com?qs=123fad', 'fake', 'bad url', 'google.com']
+    trueData = ['http://click.live.com?qs=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', 
+                'http://click.google.com?qs=fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321']
+    falseData = ['http://click.live.com?qs=123fad', 'fake', 'bad url', 'google.com']
     for datum in trueData:
       self.assertTrue(urlEncode.isMarket(datum))
     for datum in falseData:
@@ -150,11 +150,15 @@ class TestUrlEncode(unittest.TestCase):
 
     testData = [ self.gen_random_hex_chars() for index in range(5)]
     testData[4] = testData[4][:76]
-    testStrings = [binascii.unhexlify(testData[index]) for index in range(5)]
+    testStrings = [binascii.unhexlify(datum) for datum in testData]
+
     #include a test to be sure that we can correctly decode padding
     testData[4] += "ABCD"
     for datum in testData:
-      url = 'click.live.com' + '?qs=' + datum
+      #Note: as with urlEncode, we cannot use urlparse because it
+      #converts hex to uppercase and we are using uppercase for
+      #padding, lowercase for data
+      url = 'http://' + 'click.live.com?qs=' + datum
       testOutput = urlEncode.decodeAsMarket(url)
       testString = binascii.unhexlify(datum.rstrip('ABCDEF'))
       self.assertEqual(testOutput, testString)
@@ -164,12 +168,10 @@ class TestUrlEncode(unittest.TestCase):
 
     characters = ['0','1','2','3','4','5','6','7',
                   '8','9','a','b','c','d','e','f']
-    index = 0
-    stringy = ''
-    while index < 80:
-      stringy += characters[randint(0,15)]
-      index += 1
-    return stringy
+    stringy = []
+    for x in range(80):
+      stringy.append(choice(characters))
+    return ''.join(stringy)
 
 if __name__ == '__main__':
   unittest.main()

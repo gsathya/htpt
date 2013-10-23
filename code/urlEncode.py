@@ -53,7 +53,7 @@ def encodeAsCookies(data):
       cookies.append(encodeAsCookie(data[:BYTES_PER_COOKIE]))
       data = data[BYTES_PER_COOKIE:]
     else:
-      cookies.append(encodeAsCookie(data[:len(data)]))
+      cookies.append(encodeAsCookie(data))
       data = ''
   return cookies
 
@@ -72,19 +72,18 @@ def encodeAsCookie(data):
   server so we are sending back set cookies. If decide to use this for
   server-> client communication, we will need to modify this code
   """
-  if len(data) < 10 and len(data) > 5:
-    keyLen = 3
-  elif len(data) <= 5:
+  if len(data) <= 5:
     key = 'keyForPadding' #longer than 10 chars, so no need to escape
-    key = urlsafe_b64encode(key)
-    key = key.replace('=', '+')
-    value = urlsafe_b64encode(data)
-    cookie = 'Cookie: ' + key + '=' + value
-    return cookie
+    value = data
+  elif len(data) < 10 and len(data) > 5:
+    keyLen = 3
+    key = data[:keyLen]
+    value = data[keyLen:]
   else:
     keyLen = randint(3, 10)
-  key = data[:keyLen]
-  value = data[keyLen:]
+    key = data[:keyLen]
+    value = data[keyLen:]
+
   key = urlsafe_b64encode(key)
   key = key.replace('=', '+')
   value = urlsafe_b64encode(value)
@@ -156,13 +155,16 @@ def encodeAsMarket(data):
   while len(urlData) < 80:
     urlData += pickRandomHexChar()
   domain = pickDomain()
-  url = 'click.' + domain + '?qs=' + urlData
+  #Note: we cannot use urlparse here because it capitalizes our hex
+  #values and we are using uppercase to distinguish padding and
+  #actual text
+  url = 'http://' + 'click.' + domain + '?qs=' + urlData
   retVal = {'url':url, 'cookie':cookies}
   return retVal
 
 def isMarket(url):
   """Return true if this url matches the market pattern"""
-  pattern = 'click[a-zA-Z0-9.]*[.]com*\?qs=[0-9a-fA-F]{80}'
+  pattern = 'http://click[a-zA-Z0-9.]*[.]com*\?qs=[0-9a-fA-F]{80}'
   matches = re.match(pattern, url)
   if matches != None:
       return True
