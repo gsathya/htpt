@@ -8,7 +8,7 @@ import binascii
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from random import randint, choice
 
-import urlEncode
+from htpt import urlEncode
 
 class TestUrlEncode(unittest.TestCase):
   """Class with methods to test the functions in urlEncode"""
