@@ -2,13 +2,11 @@
 # Georgia Tech Fall 2013
 # url-encode.py: collection of functions to hide small chunks of data in urls
 
-#imports
 import binascii
 import re
 from base64 import urlsafe_b64encode, urlsafe_b64decode
 from random import choice, randint
 
-#constants
 AVAILABLE_TYPES=['market', 'baidu', 'google']
 BYTES_PER_COOKIE=30
 
@@ -16,11 +14,13 @@ class UrlEncodeError(Exception):
   pass
 
 def encode(data, encodingType):
-  """Encode data as a url
+  """
+  Encode data as a url
 
   Parameters:
   data - a string holding the data to be encoded
-  encodingType - an string indicating what type of expression to hide the data in
+  encodingType - an string indicating what type of expression to hide
+  the data in
 
   Returns: a dictionary with the key 'url' referencing a string
   holding the url and the key 'cookie' holding an array of 0 or more
@@ -46,7 +46,6 @@ def encode(data, encodingType):
 
 def encodeAsCookies(data):
   """Hide data inside a series of cookies"""
-
   cookies = []
   while data != '':
     if len(data) > BYTES_PER_COOKIE:
@@ -58,7 +57,8 @@ def encodeAsCookies(data):
   return cookies
 
 def encodeAsCookie(data):
-  """Hide data inside a cookie
+  """
+  Hide data inside a cookie
 
   Parameters: data- a string with fewer than 30 characters to encode
 
@@ -91,7 +91,8 @@ def encodeAsCookie(data):
   return cookie
 
 def decodeAsCookie(cookie):
-  """Decode data from inside a cookie
+  """
+  Decode data from inside a cookie
 
   Parameters: cookie- the string of text representing the cookie. This
   will be decoded into data.
@@ -104,7 +105,6 @@ def decodeAsCookie(cookie):
   Note: As with the encodeAsCookie function, this function is designed
   to send data from the client to the server and modifications are
   necessary for convincing traffic from server to client
-
   """
   pattern = 'Cookie: (?P<key>[a-zA-Z0-9+_\-/]+)=(?P<value>[a-zA-Z0-9+_=\-/]*)'
   match = re.match(pattern, cookie)
@@ -123,16 +123,19 @@ def decodeAsCookie(cookie):
 
 def pickDomain():
   """Pick a random domain from the list"""
+
   domains = ['live.com', 'microsoft.com', 'baidu.com', 'hao123.com']
   return choice(domains)
 
 def pickRandomHexChar():
   """Pick a random hexadecimal character and return it"""
+
   characters = ['A','B','C','D','E','F']
   return characters[randint(0, 5)]
 
 def encodeAsMarket(data):
-  """Hide data inside a url commonly used for email personalization
+  """
+  Hide data inside a url commonly used for email personalization
 
   Parameters:
   data - the data to encode
@@ -171,7 +174,8 @@ def isMarket(url):
   return False
 
 def decodeAsMarket(url):
-  """Decode data hidden inside a url format for email personalization
+  """
+  Decode data hidden inside a url format for email personalization
 
   Parameters: url- the url to decode
 
@@ -188,7 +192,8 @@ def decodeAsMarket(url):
   return data
 
 def decode(protocolUnit):
-  """Decode the given data after matching the url hiding format
+  """
+  Decode the given data after matching the url hiding format
 
   Parameters: data- the url and cookies to be decoded in the form of a
   dictionary with the url stored under the key 'url' and an array of 0

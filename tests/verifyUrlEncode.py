@@ -26,8 +26,10 @@ class TestUrlEncode(unittest.TestCase):
       self.assertEqual(datum, testDecode)
 
   def test_encodeAsCookies(self):
-    """Test that data is correctly inserted into multiple cookies and
-    can be correctly retrieved"""
+    """
+    Test that data is correctly inserted into multiple cookies and
+    can be correctly retrieved
+    """
 
     testData = ['by jove, this string seems like it may continue for'
                'eternity, possibly to the end of time',
@@ -134,9 +136,10 @@ class TestUrlEncode(unittest.TestCase):
         self.assertEqual(testDatum, datum)
 
   def test_isMarket(self):
-    """Verify that isMarket correctly identifies urls in the proper
-    form"""
-
+    """
+    Verify that isMarket correctly identifies urls in the proper
+    form
+    """
     trueData = ['http://click.live.com?qs=1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
                 'http://click.google.com?qs=fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321']
     falseData = ['http://click.live.com?qs=123fad', 'fake', 'bad url', 'google.com']
