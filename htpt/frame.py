@@ -14,23 +14,37 @@ MIN_SIZE_TO_PASS_UP = 512
 class FramingException(Exception):
   pass
 
-def init(**args):
-  """Initialize the framing package with the given sequence number"""
+initialized = False
+class SeqNumber():
+  _seqNum = 0
+  _lock = threading.Lock()
+  _initialized = False
 
-  if len(args) > 0:
-    self.seqNum = args[0]
-  else:
-    self.seqNum = 0
+  @staticmethod
+  def init(*args):
+    """Initialize the framing package with the given sequence number"""
 
-lock = threading.Lock()
-seq_num = 0;
-def getSequenceAndIncrement(self):
-  """In a thread safe manner, get the sequence number"""
+    if len(args) > 0:
+      SeqNumber._seqNum = args[0]
+    else:
+      SeqNumber._seqNum = 0
+    SeqNumber._initialized = True
+
+  @staticmethod
+  def getSequenceAndIncrement():
+    """In a thread safe manner, get the sequence number"""
     
-  lock.acquire()
-  seqNum = ((seqNum + 1) % MAX_SEQ_NUM)
-  lock.release()
-  return seqNum
+    #if the code has not been initialized, do that now
+    if not SeqNumber._initialized:
+      SeqNumber.init()
+    SeqNumber._lock.acquire()
+    SeqNumber._seqNum = ((SeqNumber._seqNum + 1) % MAX_SEQ_NUM)
+    SeqNumber._lock.release()
+    return SeqNumber._seqNum
+
+#make this methods available without having to access the class
+getSequenceAndIncrement = SeqNumber.getSequenceAndIncrement
+init = SeqNumber.init
 
 class Framer():
   """Class to reassemble the Tor stream"""

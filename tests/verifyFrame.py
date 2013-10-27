@@ -19,10 +19,25 @@ class TestFrame(unittest.TestCase):
     self.uploadedData = data
 
   def test_init(self):
-    pass
+    """Ensure that the init method works correctly on the SeqNumber
+    object by initializing the sequence number to the correct value"""
+    
+    aNum = 10
+    frame.SeqNumber._seqNum = aNum +500
+    frame.init(aNum)
+    self.assertEqual(aNum, frame.SeqNumber._seqNum)
+    self.assertTrue(frame.SeqNumber._initialized)
 
   def test_getSequenceAndIncrement(self):
-    pass
+    """Ensure that sequence numbers are handed out properly and that
+    wrapping occurs correctly"""
+
+    #ensure that we get the next sequence number
+    frame.init(5)
+    self.assertEqual(6, frame.getSequenceAndIncrement())
+    #ensure that we do wrapping
+    frame.init(65534)
+    self.assertEqual(0, frame.getSequenceAndIncrement())
 
   def test_FramerConstructor(self):
     pass
