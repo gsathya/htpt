@@ -40,7 +40,23 @@ class TestFrame(unittest.TestCase):
     self.assertEqual(0, frame.getSequenceAndIncrement())
 
   def test_FramerConstructor(self):
-    pass
+    """Verify that the constructor correctly establishes the buffers
+    and constants to receive data"""
+
+    self.frame = frame.Framer(self.callback)
+    #check that the buffer exists and is the correct length
+    self.assertIsNotNone(self.frame.buffer)
+    self.assertEqual(frame.BUFFER_SIZE, len(self.frame.buffer))
+
+    #check that the min and max seq numbers were set up correctly
+    self.assertEqual(self.frame.minAcceptableSeqNum, 0)
+    self.assertEqual(self.frame.maxAcceptableSeqNum, frame.BUFFER_SIZE)
+    self.frame = frame.Framer(self.callback, minSeqNum = 50)
+    self.assertEqual(self.frame.minAcceptableSeqNum, 50)
+    self.assertEqual(self.frame.maxAcceptableSeqNum, frame.BUFFER_SIZE + 50)
+
+    #check that the callback is setup correctly
+    self.assertEqual(self.frame.recvData, self.callback)
 
   def test_addFrameToBuffer(self):
     pass

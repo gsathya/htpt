@@ -48,12 +48,27 @@ init = SeqNumber.init
 
 class Framer():
   """Class to reassemble the Tor stream"""
-  def __init__(self, callback):
-    """Initialize the class to frame all of the packages"""
+
+  def __init__(self, callback, **kArgs):
+    """Initialize the class to frame all of the packages
+
+    Parameters: callback- a function which the received data will be
+    passed to once it is in the correct order
+    kArgs- additional keyword arguments specified for the
+    function. Currently, the only additional option has the keyword of
+    'minSeqNum' and an integer value which tells Framer the min
+    acceptable sequence number. Example syntax: Framer(callback,
+    minSeqNum=5)
+
+    """
 
     self.buffer = [None] * BUFFER_SIZE
-    self.minAcceptableSeqNum = 0
-    self.maxAcceptableSeqNum = BUFFER_SIZE
+    if 'minSeqNum' in kArgs:
+      self.minAcceptableSeqNum = kArgs['minSeqNum']
+      self.maxAcceptableSeqNum = BUFFER_SIZE + self.minAcceptableSeqNum
+    else:
+      self.minAcceptableSeqNum = 0
+      self.maxAcceptableSeqNum = BUFFER_SIZE
     #setup a function to call when there is data to receive
     self.recvData = callback
 
