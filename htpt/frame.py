@@ -74,13 +74,13 @@ class Framer():
 
   def isSeqNumInBuffer(self, seqNum):
     """If the sequence number is in the buffer, return True, else False"""
-    if seqNum > self.minAcceptableSeqNum:
-      if seqNum < self.maxAcceptableSeqNum:
+    if seqNum >= self.minAcceptableSeqNum:
+      if seqNum <= self.maxAcceptableSeqNum:
         return True
       #explore the case where the sequence number wraps
-      elif (self.minAcceptableSeqNum + BUFFER_SIZE) > MAX_SEQ_NUM:
+      elif (self.minAcceptableSeqNum + BUFFER_SIZE) >= MAX_SEQ_NUM:
         #case where maxSeqNum wrapped, so seqNum > min > max
-        if(seqNum < MAX_SEQ_NUM):
+        if(seqNum <= MAX_SEQ_NUM):
           return True
       else:
         return False
@@ -105,17 +105,19 @@ class Framer():
     not unacked packets
     
     """
+    if not self.isSeqNumInBuffer(seqNum):
+      raise FramingException("Not enough space in the buffer")
     index = (seqNum - self.minAcceptableSeqNum) % MAX_SEQ_NUM
     self.buffer[index] = data
     #see if we have enough data to pass up by coalescing all of the
     #frames and seeing if we meet the min threshold to send up
     dataToSend = 0
     for index in range(BUFFER_SIZE):
-      if self.buffer[index == None]:
+      if self.buffer[index] == None:
         #we have found all sendable data
         break
       else:
-        dataToSend += len(self.buffer[index])
+        dataToSend = dataToSend + len(self.buffer[index])
     #if we have enough data to send up, pass it to the callback
     #function
     if dataToSend > MIN_SIZE_TO_PASS_UP:
@@ -125,7 +127,8 @@ class Framer():
         availableData += self.buffer.pop(0)
         self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
         self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
-      self.callback(availableData)
+        self.buffer.append(None)
+      self.recvData(availableData)
 
   def flushBuffer(self):
     """Send all in order data up to the callback function"""
@@ -136,7 +139,7 @@ class Framer():
         break
       else:
         self.buffer[self.bufferMin] += self.buffer[index]
-    self.callback(self.buffer[self.bufferMin])
+    self.recvData(self.buffer[self.bufferMin])
 
   def recvFrame(self, data, seqNum):
     """Receive a frame with the specified sequence number"""
@@ -146,4 +149,4 @@ class Framer():
       #add the packet to the buffer
       self.addFrameToBuffer(data, seqNum)
     else:
-      raise FrameException("Not enough space in the buffer to fit data")
+      raise FramingException("Not enough space in the buffer to fit data")
