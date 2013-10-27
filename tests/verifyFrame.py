@@ -94,7 +94,7 @@ class TestFrame(unittest.TestCase):
     seqNum = 68000
     self.assertEqual(False, self.frame.isSeqNumInBuffer(seqNum))
 
-  def test_addFrameToBuffer(self):
+  def test_recvFrame(self):
     """Test that frames are correctly added to the buffer"""
     
     #initialize our window from 0-> frame.BUFFER_SIZE and set the size
@@ -103,32 +103,34 @@ class TestFrame(unittest.TestCase):
     frame.MIN_SIZE_TO_PASS_UP = 10
     self.uploadedData = ''
     #start by testing that out of order packets are queued correctly
-    self.framer.addFrameToBuffer('hello', 0)
-    self.framer.addFrameToBuffer(' wordy', 2)
-    self.framer.addFrameToBuffer(' adverb', 3)
-    self.framer.addFrameToBuffer(' otherwise', 4)
+    self.framer.recvFrame('hello', 0)
+    self.framer.recvFrame(' wordy', 2)
+    self.framer.recvFrame(' adverb', 3)
+    self.framer.recvFrame(' otherwise', 4)
     #verify that nothing has been sent up yet
     self.assertEqual(self.uploadedData, '')
     #and verify that everything gets delivered in order
-    self.framer.addFrameToBuffer(' stuffy', 1)
+    self.framer.recvFrame(' stuffy', 1)
     self.assertEqual(self.uploadedData, 'hello stuffy wordy adverb otherwise')
     
     #verify that data gets sent as soon as the min size to pass up is hit
     self.uploadedData = ''
     self.framer = frame.Framer(self.callback, minSeqNum = 0)
     frame.MIN_SIZE_TO_PASS_UP = 10
-    self.framer.addFrameToBuffer('hello', 0)
-    self.framer.addFrameToBuffer(' working', 1)
+    self.framer.recvFrame('hello', 0)
+    self.framer.recvFrame(' working', 1)
     self.assertEqual(self.uploadedData, 'hello working')
 
     #verify that frames out of the window get dropped
     self.uploadedData = ''
-    self.assertRaises(frame.FramingException, self.framer.addFrameToBuffer,'something', 50000)
+    self.assertRaises(frame.FramingException, self.framer.recvFrame,'something', 50000)
     self.assertNotIn('something', self.framer.buffer)
 
   def test_flushBuffer(self):
-    pass
-
-  def test_recvFrame(self):
-    pass
-
+    """Verify that we can correctly flush the buffer"""
+    
+    self.uploadedData = ''
+    self.framer = frame.Framer(self.callback, minSeqNum = 0)
+    self.framer.recvFrame('hello', 0)
+    self.framer.flushBuffer()
+    self.assertEqual(self.uploadedData, 'hello')
