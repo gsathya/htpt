@@ -18,6 +18,24 @@ class TestFrame(unittest.TestCase):
     
     self.uploadedData = data
 
+  def test_init(self):
+    pass
+
+  def test_getSequenceAndIncrement(self):
+    pass
+
+  def test_FramerConstructor(self):
+    pass
+
+  def test_addFrameToBuffer(self):
+    pass
+
+  def test_flushBuffer(self):
+    pass
+
+  def test_recvFrame(self):
+    pass
+
   def test_isSeqNumInBuffer(self):
     """Test whether this function correctly identifies when sequence
     numbers are in or out of the scope of the buffer"""
