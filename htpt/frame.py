@@ -6,6 +6,8 @@
 import threading
 import numpy as np
 
+import urlEncode
+
 class FramingException(Exception):
   pass
 
@@ -134,3 +136,20 @@ class Framer():
       self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
       self.buffer.append(None)
     self.recvData(availableData)
+
+class Assembler:
+  def __init__(self):
+    self.output = None
+
+  def getHeaders(self):
+    # TODO: add headers
+    return []
+
+  def flush(self):
+    # TODO: send self.output to the interwebz
+    self.output = None
+
+  def assemble(self, data):
+    headers = self.getHeaders()
+    self.output = urlEncode.encode(headers+data, 'market')
+    self.flush()
