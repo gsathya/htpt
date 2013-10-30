@@ -6,11 +6,6 @@
 import threading
 import numpy as np
 
-#constants
-MAX_SEQ_NUM = 65535
-BUFFER_SIZE = 2048
-MIN_SIZE_TO_PASS_UP = 512
-
 class FramingException(Exception):
   pass
 
