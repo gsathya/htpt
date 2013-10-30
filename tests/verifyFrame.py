@@ -4,6 +4,7 @@
 
 import unittest
 
+from htpt import constants
 from htpt import frame
 
 class TestFrame(unittest.TestCase):
@@ -47,14 +48,14 @@ class TestFrame(unittest.TestCase):
     self.frame = frame.Framer(self.callback)
     #check that the buffer exists and is the correct length
     self.assertIsNotNone(self.frame.buffer)
-    self.assertEqual(frame.BUFFER_SIZE, len(self.frame.buffer))
+    self.assertEqual(constants.BUFFER_SIZE, len(self.frame.buffer))
 
     #check that the min and max seq numbers were set up correctly
     self.assertEqual(self.frame.minAcceptableSeqNum, 0)
-    self.assertEqual(self.frame.maxAcceptableSeqNum, frame.BUFFER_SIZE)
+    self.assertEqual(self.frame.maxAcceptableSeqNum, constants.BUFFER_SIZE)
     self.frame = frame.Framer(self.callback, minSeqNum = 50)
     self.assertEqual(self.frame.minAcceptableSeqNum, 50)
-    self.assertEqual(self.frame.maxAcceptableSeqNum, frame.BUFFER_SIZE + 50)
+    self.assertEqual(self.frame.maxAcceptableSeqNum, constants.BUFFER_SIZE + 50)
 
     #check that the callback is setup correctly
     self.assertEqual(self.frame.recvData, self.callback)
@@ -97,7 +98,7 @@ class TestFrame(unittest.TestCase):
   def test_recvFrame(self):
     """Test that frames are correctly added to the buffer"""
     
-    #initialize our window from 0-> frame.BUFFER_SIZE and set the size
+    #initialize our window from 0-> constants.BUFFER_SIZE and set the size
     #to pass up to 10 characters
     self.framer = frame.Framer(self.callback, minSeqNum=0)
     frame.MIN_SIZE_TO_PASS_UP = 10

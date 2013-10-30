@@ -7,6 +7,7 @@ import threading
 import numpy as np
 
 import urlEncode
+from constants import *
 
 class FramingException(Exception):
   pass
