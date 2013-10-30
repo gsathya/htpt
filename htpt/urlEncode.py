@@ -32,6 +32,12 @@ def encode(data, encodingType):
   large numbers of cookies will look suspicious
 
   """
+
+  if type(data) is list:
+    data = ''.join(data)
+  elif type(data) is not str:
+    raise(UrlEncodeError("Bad data type: %s. Use string or list" % type(data)))
+
   if encodingType not in AVAILABLE_TYPES:
       raise(UrlEncodeError("Bad encoding type. Please refer to"
                            "url-encode.AVAILABLE_TYPES for available options"))
