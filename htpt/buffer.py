@@ -4,6 +4,10 @@ class Buffer:
     """Stores data, buffers it and sends it to the Framer"""
     def __init__(self):
         self.buffer = []
+        self.callback = None
+
+    def attach(self, callback):
+        self.callback = callback
 
     def addData(self, data):
         # we can't add all the data, there's not enough space
@@ -22,4 +26,5 @@ class Buffer:
             self.buffer.append(data)
 
     def flushBuffer(self):
-        pass
+        self.callback(self.buffer)
+        self.buffer = []
