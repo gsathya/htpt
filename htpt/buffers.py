@@ -6,7 +6,7 @@ class Buffer:
     self.buffer = []
     self.callback = None
 
-  def attach(self, callback):
+  def addCallback(self, callback):
     self.callback = callback
 
   def addData(self, data):
@@ -27,4 +27,4 @@ class Buffer:
 
   def flushBuffer(self):
     self.callback(self.buffer)
-      self.buffer = []
+    self.buffer = []
