@@ -143,13 +143,40 @@ class Assembler:
   def __init__(self):
     self.output = None
 
+  def generateFlags(self, more_data):
+    """Generates a 4-bit string of bits
+
+    Parameters: more_data- boolean True if more data
+    currently, the only flag we set is the MSB for more data"""
+
+    if more_data:
+      flags = '1000'
+    else:
+      flags = '0000'
+    return flags
+  
+  def generateNonce(self)
+    """Generate a random integer value between 0 and 16"""
+    nonce = np.random.randint(0,15)
+    return nonce
+
+  def getSeqNum(self)
+    # TODO
+    seqNum = None
+    return seqNum
+
+  def getSessionID(self)
+    # TODO
+    sessionID = None
+    return sessionID
+
   def getHeaders(self, seqNum, sessionID, flags, nonce):
     """Create a 4 byte struct header in network byte order
     
     Parameters: seqNum- 2 byte sequence number of the frame
     sessionID - 1 byte
-    flags - 4 bits. currently only MSB bit denotes 'More'
-    nonce - 4 bit randomized value
+    flags - 4 bit string. currently only '1000' if More data
+    nonce - integer. randomized value [0,15]
     
     returns: header string (struct) packedused in assemble function
 
