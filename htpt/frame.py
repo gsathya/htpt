@@ -156,8 +156,8 @@ class Assembler:
     """
     # 16-bit sequence num | 8-bit session ID | 4-bit flag | 4-bit nonce
     # unsigned short (H) | unsigned char (B) | unsigned char (B) packed
-    flag_and_nonce = (flag << 4) + nonce
-    headerString = struct.pack(!HBB, seqNum, sessionID, flag_and_nonce)
+    flags_and_nonce = (int(flags,2) << 4) | nonce
+    headerString = struct.pack('!HBB', seqNum, sessionID, flags_and_nonce)
 
     return headerString
 
