@@ -5,6 +5,7 @@
 
 import threading
 import numpy as np
+import struct as struct
 
 import urlEncode
 from constants import *
@@ -142,9 +143,23 @@ class Assembler:
   def __init__(self):
     self.output = None
 
-  def getHeaders(self):
-    # TODO: add headers
-    return []
+  def getHeaders(self, seqNum, sessionID, flags, nonce):
+    """Create a 4 byte struct header in network byte order
+    
+    Parameters: seqNum- 2 byte sequence number of the frame
+    sessionID - 1 byte
+    flags - 4 bits. currently only MSB bit denotes 'More'
+    nonce - 4 bit randomized value
+    
+    returns: header string (struct) packedused in assemble function
+
+    """
+    # 16-bit sequence num | 8-bit session ID | 4-bit flag | 4-bit nonce
+    # unsigned short (H) | unsigned char (B) | unsigned char (B) packed
+    flag_and_nonce = (flag << 4) + nonce
+    headerString = struct.pack(!HBB, seqNum, sessionID, flag_and_nonce)
+
+    return headerString
 
   def flush(self):
     # TODO: send self.output to the interwebz
