@@ -195,4 +195,31 @@ class Assembler:
   def assemble(self, data):
     headers = self.getHeaders()
     self.output = urlEncode.encode(headers+data, 'market')
+    # when unassembling: data = headers+data[4:]
     self.flush()
+
+
+class UnAssembler:
+  def __init__(self):
+    self.output = None
+
+  def unassemble(self, frame):
+    """Unassemble received frame to headers and data
+
+    headers are the first 4 bytes"""
+
+    data = frame[4:]
+    # TODO send data to upper layer - add flush function ?
+
+    headers = frame[:4]
+    self.retrieveHeaders(headers)
+
+  def retrieveHeaders(self, headers):
+    """Extract 4 byte header to seqNum, sessionID, Flags, Nonce"""
+
+    headerTuple = struct.unpack('!HBB', headers)
+    self.seqNum = headerTuple[0]
+    self.sessionID = headerTuple[1]
+    mask = int('0b1111',2)
+    self.flags = bin(headerTuple[2] & (mask << 4)) >> 4)[2:]
+    self.nonce = headerTuple[2] & mask 
