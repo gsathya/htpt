@@ -13,7 +13,7 @@ LOOKUP_TABLE = ['a', 'an', 'the', 'what', 'if', 'but', 'he', 'she',
                 'it', 'and', 'who', 'when', 'is', 'am', 'are', 'was']
 REVERSE_LOOKUP_TABLE = {'a':'0', 'an':'1', 'the':'2', 'what':'3',
                         'if':'4', 'but':'5', 'he':'6', 'she':'7',
-                        'it':'8', 'and':'9', 'who':'A', 'when':'B', 
+                        'it':'8', 'and':'9', 'who':'A', 'when':'B',
                         'is':'C', 'am':'D', 'are':'E', 'was':'F'}
 
 class UrlEncodeError(Exception):
@@ -206,7 +206,7 @@ def encodeAsBaidu(data):
 
   Note: Cookies will be used to store information if the data is over
   39 characters.
-  
+
   Example: http://www.baidu.com/s?wd=mao+is+cool&rsv_bp=0&ch=&tn=baidu&bar=&rsv_spt=3&ie=utf-8
 
   """
@@ -226,9 +226,9 @@ def encodeAsBaidu(data):
 
 def isBaidu(url):
   """Return True if this url matches the pattern for Baidu searches"""
-  
+
   #Example: http://www.baidu.com/s?wd=mao+is+cool&rsv_bp=0&ch=&tn=baidu&bar=&rsv_spt=3&ie=utf-8
-  pattern = 'http://www.baidu.com/s?wd=[\W]+'
+  pattern = 'http://www.baidu.com/s\?wd=[\S+]+'
   matches = re.match(pattern, url)
   if matches != None:
       return True
@@ -243,7 +243,7 @@ def decodeAsBaidu(url):
   Returns: a string with the decoded data
 
   """
-  pattern = 'http://www.baidu.com/s?wd=(?<englishText>[\W]+)'
+  pattern = 'http://www.baidu.com/s\?wd=(?<englishText>[\W]+)'
   matches = re.match(pattern, url)
   data = matches.group('engishText')
   data = decodeAsEnglish(data)
@@ -261,7 +261,7 @@ def encodeAsGoogle(data):
 
   Note: Cookies will be used to store information if the data is over
   39 characters.
-  
+
   Example: https://www.google.com/search?q=freedom+is+nice
 
   """
@@ -272,7 +272,7 @@ def decodeAsGoogle(data):
 
 def encodeAsEnglish(data):
   """Serialize data using english words for symbols"""
-  
+
   #first, convert the string to a hex representation
   hexString = binascii.hexlify(data)
   #and convert the hex representation into words
@@ -293,7 +293,7 @@ def decodeAsEnglish(englishText):
   ''.join(hexString)
   #and convert the hex back to a string
   data = binascii.unhexlify(hexString)
-  
+
 def decodeAsMarket(url):
   """
   Decode data hidden inside a url format for email personalization

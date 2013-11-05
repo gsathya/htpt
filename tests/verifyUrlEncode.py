@@ -189,8 +189,19 @@ class TestUrlEncode(unittest.TestCase):
     return ''.join(stringy)
 
   def test_isBaidu(self):
-    pass
-  
+    """verify that we can detect urls of the form
+    http://www.baidu.com/s?wd=text+other"""
+
+    trueUrls = ['http://www.baidu.com/s?wd=mao+is+cool&rsv_bp='
+            '0&ch=&tn=baidu&bar=&rsv_spt=3&ie=utf-8',
+            'http://www.baidu.com/s?wd=freedom+is+nice'
+            '&rsv_bp=0&rsv_spt=3&ie=utf-8']
+    falseUrls = ['http://www.google.com', 'stirngy']
+    for url in trueUrls:
+      self.assertTrue(urlEncode.isBaidu(url))
+    for url in falseUrls:
+      self.assertFalse(urlEncode.isBaidu(url))
+
   def test_decodeAsBaidu(self):
     pass
 
