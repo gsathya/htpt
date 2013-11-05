@@ -14,33 +14,22 @@ from constants import *
 class FramingException(Exception):
   pass
 
-initialized = False
 class SeqNumber():
-  _seqNum = 0
-  _lock = threading.Lock()
-  _initialized = False
+  self.seqNum = 0
+  self.initialized = False
+  self._lock = threading.Lock()
 
-  @staticmethod
-  def init(*args):
+  def __init__(self, seqNum = 0):
     """Initialize the framing package with the given sequence number"""
+    self.seqNum = seqNum
+    self.initialized = True
 
-    if len(args) > 0:
-      SeqNumber._seqNum = args[0]
-    else:
-      SeqNumber._seqNum = 0
-    SeqNumber._initialized = True
-
-  @staticmethod
-  def getSequenceAndIncrement():
+  def getSequenceAndIncrement(self):
     """In a thread safe manner, get the sequence number"""
-    
-    #if the code has not been initialized, do that now
-    if not SeqNumber._initialized:
-      SeqNumber.init()
-    SeqNumber._lock.acquire()
-    SeqNumber._seqNum = ((SeqNumber._seqNum + 1) % MAX_SEQ_NUM)
-    SeqNumber._lock.release()
-    return SeqNumber._seqNum
+    self._lock.acquire()
+    self.seqNum = ((self.seqNum + 1) % MAX_SEQ_NUM)
+    self._lock.release()
+    return self.seqNum
 
 #make this methods available without having to access the class
 getSequenceAndIncrement = SeqNumber.getSequenceAndIncrement
@@ -140,8 +129,11 @@ class Framer():
       self.buffer.append(None)
     self.recvData(availableData)
 
-class Assembler:
+class Encoder:
+
   def __init__(self):
+    """Initialize SeqNumber object"""
+    self.seqNum = SeqNumber()
     self.output = None
 
   def generateFlags(self, more_data):
@@ -162,12 +154,12 @@ class Assembler:
     return nonce
 
   def getSeqNum(self):
-    # TODO add sathya's seqNum patch here
-    seqNum = None
+    """Get sequence number after incrementing"""
+    seqNum = self.seqNum.getSequenceAndIncrement()
     return seqNum
 
   def getSessionID(self):
-    # TODO
+    # TODO not sure how to set session IDs
     sessionID = None
     return sessionID
 
@@ -203,27 +195,32 @@ class Assembler:
     # TODO: send self.output to the interwebz
     self.output = None
 
-  def assemble(self, data):
+  def encode(self, data):
+    """Assemble frame as headers + data"""
+
+    # TODO: need to add a check for data length?
     headers = self.getHeaders()
     self.output = urlEncode.encode(headers+data, 'market')
     # when unassembling: data = headers+data[4:]
     self.flush()
 
 
-class UnAssembler:
+class Decoder:
   def __init__(self):
     self.output = None
 
-  def unassemble(self, frame):
+  def decode(self, frame):
     """Unassemble received frame to headers and data
 
     headers are the first 4 bytes"""
 
-    data = frame[4:]
-    # TODO send data to upper layer - add flush function ?
-
     headers = frame[:4]
     self.retrieveHeaders(headers)
+    
+    data = frame[4:]
+    for datum in data:
+      self.output = urlEncode.decode(datum)
+      self.flush()
 
   def retrieveHeaders(self, headers):
     """Extract 4 byte header to seqNum, sessionID, Flags, Nonce"""
@@ -233,4 +230,11 @@ class UnAssembler:
     self.sessionID = headerTuple[1]
     mask = int('0b1111',2)
     self.flags = bin(headerTuple[2] & (mask << 4)) >> 4)[2:]
-    self.nonce = headerTuple[2] & mask 
+    self.nonce = headerTuple[2] & mask
+    # TODO: send these headers somewhere? if more_data then loop?
+
+  def flush(self):
+    # TODO: send self.output to Tor
+    print self.output
+    self.output = None
+    pass
