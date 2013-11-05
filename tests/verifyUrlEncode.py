@@ -129,8 +129,9 @@ class TestUrlEncode(unittest.TestCase):
         #the data
         hashPart = matches.group('hash')
         self.assertEqual(len(hashPart), 80)
-        hashPart = hashPart.rstrip('ABCDEF')
-        testDatum = binascii.unhexlify(hashPart)
+        dataLen = int(hashPart[:2], 16)
+        testDatum = hashPart[2:dataLen+2]
+        testDatum = binascii.unhexlify(testDatum)
         for cookie in output['cookie']:
           testDatum += urlEncode.decodeAsCookie(cookie)
         self.assertEqual(testDatum, datum)
@@ -152,18 +153,22 @@ class TestUrlEncode(unittest.TestCase):
     """Verify that decodeAsMarket correctly decodes data"""
 
     testData = [ self.gen_random_hex_chars() for index in range(5)]
-    testData[4] = testData[4][:76]
-    testStrings = [binascii.unhexlify(datum) for datum in testData]
+    testData[4] = testData[4][:78]
+    testData[4] = hex(70)[2:] + testData[4]
+    testStrings = []
+    for datum in testData:
+      dataLen = int(datum[:2], 16)
+      testStrings.append(binascii.unhexlify(datum[2:dataLen+2]))
 
     #include a test to be sure that we can correctly decode padding
-    testData[4] += "ABCD"
     for datum in testData:
       #Note: as with urlEncode, we cannot use urlparse because it
       #converts hex to uppercase and we are using uppercase for
       #padding, lowercase for data
       url = 'http://' + 'click.live.com?qs=' + datum
       testOutput = urlEncode.decodeAsMarket(url)
-      testString = binascii.unhexlify(datum.rstrip('ABCDEF'))
+      dataLen = int(datum[:2], 16)
+      testString = binascii.unhexlify(datum[2:dataLen+2])
       self.assertEqual(testOutput, testString)
 
   def gen_random_hex_chars(self):
@@ -172,9 +177,25 @@ class TestUrlEncode(unittest.TestCase):
     characters = ['0','1','2','3','4','5','6','7',
                   '8','9','a','b','c','d','e','f']
     stringy = []
-    for x in range(80):
+    length = randint(1, 39)
+    length = length *2
+    lenStr = hex(length)[2:]
+    if len(lenStr) == 1:
+      stringy.append('0'+lenStr)
+    else:
+      stringy.append(lenStr)
+    for x in range(78):
       stringy.append(choice(characters))
     return ''.join(stringy)
+
+  def test_isBaidu(self):
+    pass
+  
+  def test_decodeAsBaidu(self):
+    pass
+
+  def test_encodeAsBaidu(self):
+    pass
 
 if __name__ == '__main__':
   unittest.main()

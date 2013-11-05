@@ -4,7 +4,6 @@
 # frame.py: ensure in-order delivery of frames for the htpt project
 
 import threading
-import numpy as np
 
 import urlEncode
 from constants import *
