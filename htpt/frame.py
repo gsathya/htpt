@@ -5,7 +5,8 @@
 
 import threading
 import numpy as np
-import struct as struct
+import struct
+from random import randint
 
 import urlEncode
 from constants import *
@@ -155,25 +156,29 @@ class Assembler:
       flags = '0000'
     return flags
   
-  def generateNonce(self)
+  def generateNonce(self):
     """Generate a random integer value between 0 and 16"""
-    nonce = np.random.randint(0,15)
+    nonce = randint(0,15)
     return nonce
 
-  def getSeqNum(self)
-    # TODO
+  def getSeqNum(self):
+    # TODO add sathya's seqNum patch here
     seqNum = None
     return seqNum
 
-  def getSessionID(self)
+  def getSessionID(self):
     # TODO
     sessionID = None
     return sessionID
 
-  def getHeaders(self, seqNum, sessionID, flags, nonce):
+  def getHeaders(self):
     """Create a 4 byte struct header in network byte order
     
-    Parameters: seqNum- 2 byte sequence number of the frame
+    16-bit sequence num | 8-bit session ID | 4-bit flag | 4-bit nonce
+    unsigned short (H) | unsigned char (B) | unsigned char (B) packed
+    
+    Calls functions to get:
+    seqNum- 2 byte sequence number of the frame
     sessionID - 1 byte
     flags - 4 bit string. currently only '1000' if More data
     nonce - integer. randomized value [0,15]
@@ -181,8 +186,14 @@ class Assembler:
     returns: header string (struct) packedused in assemble function
 
     """
-    # 16-bit sequence num | 8-bit session ID | 4-bit flag | 4-bit nonce
-    # unsigned short (H) | unsigned char (B) | unsigned char (B) packed
+
+    seqNum = self.getSeqNum()
+    sessionID = self.getSessionID()
+    # TODO check for more_data = 1 if data > 40 bytes ?
+    more_data = 0
+    flags = self.generateFlags(more_data)
+    nonce = self.generateNonce()
+
     flags_and_nonce = (int(flags,2) << 4) | nonce
     headerString = struct.pack('!HBB', seqNum, sessionID, flags_and_nonce)
 
