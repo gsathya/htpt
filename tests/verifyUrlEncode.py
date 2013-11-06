@@ -19,9 +19,10 @@ class TestUrlEncode(unittest.TestCase):
                 'this is a longer sequence of characters'
                 'which should be longer than a normal url']
     for datum in testData:
-      #todo update this to enumerate all types of valid url encoding
-      #schemes and test each one
       testOutput = urlEncode.encode(datum, 'market')
+      testDecode = urlEncode.decode(testOutput)
+      self.assertEqual(datum, testDecode)
+      testOutput = urlEncode.encode(datum, 'baidu')
       testDecode = urlEncode.decode(testOutput)
       self.assertEqual(datum, testDecode)
 
@@ -210,13 +211,20 @@ class TestUrlEncode(unittest.TestCase):
     are relying on the test_encodeAsBaidu functionality to make sure
     that the encoding correctly hides the data
 
+    Dependencies: this function depends on encodeAsBaidu and decodeAsCookie
+
     """
     testData = ['this is a string', 'some-data-that-appears-mildly'
                 '-long-and-hopefully-_exceeds40chars',
                 'another string']
     for datum in testData:
       testOutput = urlEncode.encodeAsBaidu(datum)
-      self.assertEqual(datum, urlEncode.decodeAsBaidu(testOutput))
+      cookieData = []
+      for cookie in testOutput['cookie']:
+        cookieData.append(urlEncode.decodeAsCookie(cookie))
+      cookieData = ''.join(cookieData)
+      urlData = urlEncode.decodeAsBaidu(testOutput['url'])
+      self.assertEqual(datum, urlData + cookieData)
 
   def test_encodeAsBaidu(self):
     """

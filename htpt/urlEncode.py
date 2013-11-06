@@ -234,25 +234,20 @@ def isBaidu(url):
       return True
   return False
 
-def decodeAsBaidu(data):
+def decodeAsBaidu(url):
   """
   Decode data hidden inside a url format for searches
 
-  Parameters: data- a dictionary with the url to decode stored under
-  the key 'url' and cookies to decode under the key 'cookie'
+  Parameters: url- the url to decode
 
   Returns: a string with the decoded data
 
   """
-  url = data['url']
-  cookies = data['cookie']
   pattern = 'http://www.baidu.com/s\?wd=(?P<englishText>[a-zA-Z0-9+]+)'
   matches = re.match(pattern, url)
   urlData = matches.group('englishText')
   words = urlData.split('+')
   data = decodeAsEnglish(words)
-  for cookie in cookies:
-    data += decodeAsCookie(cookie)
   return data
 
 def encodeAsGoogle(data):
