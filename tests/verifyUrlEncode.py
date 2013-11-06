@@ -254,10 +254,30 @@ class TestUrlEncode(unittest.TestCase):
       self.assertEqual(datum, decoded)
 
   def test_encodeAsEnglish(self):
-    pass
+    """Verify that we are correctly encoding text as english"""
+
+    testData = ['some text', 'more texty things',
+                'but wait, there is even more and you even get a :']
+    for datum in testData:
+      testOutput = urlEncode.encodeAsEnglish(datum)
+      #test that we are using the correct format
+      for word in testOutput:
+        self.assertIn(word, urlEncode.LOOKUP_TABLE)
+      #verify that test decodes correctly
+      testString = []
+      for word in testOutput:
+        testString.append(urlEncode.REVERSE_LOOKUP_TABLE[word])
+      testString = ''.join(testString)
+      self.assertEqual(datum, binascii.unhexlify(testString))
 
   def test_decodeAsEnglish(self):
-    pass
+    """Verify that we can correctly decode the hidden data"""
+
+    testData = ['somethinga45lkh;asf wonddeasdful', 'other',
+                'stuffy awesomeness']
+    for datum in testData:
+      testOutput = urlEncode.encodeAsEnglish(datum)
+      self.assertEqual(datum, urlEncode.decodeAsEnglish(testOutput))
 
 if __name__ == '__main__':
   unittest.main()
