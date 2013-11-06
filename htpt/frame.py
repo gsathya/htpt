@@ -31,10 +31,6 @@ class SeqNumber():
     self._lock.release()
     return self.seqNum
 
-#make this methods available without having to access the class
-getSequenceAndIncrement = SeqNumber.getSequenceAndIncrement
-init = SeqNumber.init
-
 class Framer():
   """Class to reassemble the Tor stream"""
 
@@ -91,7 +87,7 @@ class Framer():
 
     Note: the acceptable window is based on available buffer space,
     not unacked packets
-    
+
     """
     if not self.isSeqNumInBuffer(seqNum):
       raise FramingException("Not enough space in the buffer")
@@ -147,7 +143,7 @@ class Encoder:
     else:
       flags = '0000'
     return flags
-  
+
   def generateNonce(self):
     """Generate a random integer value between 0 and 16"""
     nonce = randint(0,15)
@@ -165,16 +161,16 @@ class Encoder:
 
   def getHeaders(self):
     """Create a 4 byte struct header in network byte order
-    
+
     16-bit sequence num | 8-bit session ID | 4-bit flag | 4-bit nonce
     unsigned short (H) | unsigned char (B) | unsigned char (B) packed
-    
+
     Calls functions to get:
     seqNum- 2 byte sequence number of the frame
     sessionID - 1 byte
     flags - 4 bit string. currently only '1000' if More data
     nonce - integer. randomized value [0,15]
-    
+
     returns: header string (struct) packedused in assemble function
 
     """
@@ -216,7 +212,7 @@ class Decoder:
 
     headers = frame[:4]
     self.retrieveHeaders(headers)
-    
+
     data = frame[4:]
     for datum in data:
       self.output = urlEncode.decode(datum)
