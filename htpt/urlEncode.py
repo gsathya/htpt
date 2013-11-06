@@ -215,8 +215,8 @@ def encodeAsBaidu(data):
   if len(data) > 40:
     urlData = data[:40]
     cookies = encodeAsCookies(data[40:])
-  urlData = encodeAsEnglish(urlData)
-  urlData = '+'.join(urlData)
+  words = encodeAsEnglish(urlData)
+  urlData = '+'.join(words)
   #Note: we cannot use urlparse here because it capitalizes our hex
   #values and we are using uppercase to distinguish padding and
   #actual text
@@ -234,19 +234,25 @@ def isBaidu(url):
       return True
   return False
 
-def decodeAsBaidu(url):
+def decodeAsBaidu(data):
   """
   Decode data hidden inside a url format for searches
 
-  Parameters: url- the url to decode
+  Parameters: data- a dictionary with the url to decode stored under
+  the key 'url' and cookies to decode under the key 'cookie'
 
   Returns: a string with the decoded data
 
   """
-  pattern = 'http://www.baidu.com/s\?wd=(?<englishText>[\W]+)'
+  url = data['url']
+  cookies = data['cookie']
+  pattern = 'http://www.baidu.com/s\?wd=(?P<englishText>[a-zA-Z0-9+]+)'
   matches = re.match(pattern, url)
-  data = matches.group('engishText')
-  data = decodeAsEnglish(data)
+  urlData = matches.group('englishText')
+  words = urlData.split('+')
+  data = decodeAsEnglish(words)
+  for cookie in cookies:
+    data += decodeAsCookie(cookie)
   return data
 
 def encodeAsGoogle(data):
@@ -278,21 +284,20 @@ def encodeAsEnglish(data):
   #and convert the hex representation into words
   stringy = []
   for char in hexString:
-    stringy.append(LOOKUP_TABLE[int(char)])
-  stringy = ' '.join(stringy)
+    stringy.append(LOOKUP_TABLE[int(char, 16)])
   return stringy
 
-def decodeAsEnglish(englishText):
+def decodeAsEnglish(words):
   """Convert data back to hex, then a string from english text"""
 
   #first convert the english text back to hex
   hexString = []
-  words = englishText.split(' ')
   for word in words:
     hexString.append(REVERSE_LOOKUP_TABLE[word])
-  ''.join(hexString)
+  hexString = ''.join(hexString)
   #and convert the hex back to a string
   data = binascii.unhexlify(hexString)
+  return data
 
 def decodeAsMarket(url):
   """

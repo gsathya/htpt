@@ -203,9 +203,52 @@ class TestUrlEncode(unittest.TestCase):
       self.assertFalse(urlEncode.isBaidu(url))
 
   def test_decodeAsBaidu(self):
-    pass
+    """
+    Verify that we correctly decode Baidu urls
+
+    Note: we are just testing that we can decode what we encode. We
+    are relying on the test_encodeAsBaidu functionality to make sure
+    that the encoding correctly hides the data
+
+    """
+    testData = ['this is a string', 'some-data-that-appears-mildly'
+                '-long-and-hopefully-_exceeds40chars',
+                'another string']
+    for datum in testData:
+      testOutput = urlEncode.encodeAsBaidu(datum)
+      self.assertEqual(datum, urlEncode.decodeAsBaidu(testOutput))
 
   def test_encodeAsBaidu(self):
+    """
+    Verify that the Baidu encoding actually looks like it should
+
+    Dependencies: decodeAsEnglish, decodeAsCookie
+
+    """
+    testData = ['this is a string', 'some-data-that-appears-mildly'
+                '-long-and-hopefully-_exceeds40chars',
+                'another string']
+    for datum in testData:
+      testOutput = urlEncode.encodeAsBaidu(datum)
+      #assert that cookies were created if needed
+      if len(datum) > 40:
+        self.assertNotEqual(testOutput['cookie'], [])
+      #assert that the url is in the correct form
+      pattern = 'http://www.baidu.com/s\?wd=(?P<data>[\S+]+)'
+      matches = re.match(pattern, testOutput['url'])
+      self.assertIsNotNone(matches)
+      #assert that the url and cookies correctly decode
+      words = matches.group('data')
+      words = words.split('+')
+      decoded = urlEncode.decodeAsEnglish(words)
+      for cookie in testOutput['cookie']:
+        decoded += urlEncode.decodeAsCookie(cookie)
+      self.assertEqual(datum, decoded)
+
+  def test_encodeAsEnglish(self):
+    pass
+
+  def test_decodeAsEnglish(self):
     pass
 
 if __name__ == '__main__':
