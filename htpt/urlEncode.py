@@ -182,8 +182,8 @@ def encodeAsMarket(data):
   #values and we are using uppercase to distinguish padding and
   #actual text
   url = 'http://' + 'click.' + domain + '?qs=' + urlData
-  retVal = {'url':url, 'cookie':cookies}
-  return retVal
+  encodedData = {'url':url, 'cookie':cookies}
+  return encodedData
 
 def isMarket(url):
   """Return true if this url matches the market pattern"""
@@ -221,8 +221,8 @@ def encodeAsBaidu(data):
   #values and we are using uppercase to distinguish padding and
   #actual text
   url = 'http://www.baidu.com/s?wd=' + urlData
-  retVal = {'url':url, 'cookie':cookies}
-  return retVal
+  encodedData = {'url':url, 'cookie':cookies}
+  return encodedData
 
 def isBaidu(url):
   """Return True if this url matches the pattern for Baidu searches"""
