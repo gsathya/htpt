@@ -1,0 +1,5 @@
+\section{Abstract}
+To prevent Deep Packet Inspection (DPI) from being able to trivially recognize a Tor data stream, the Pluggable Transport framework was established to allow developers to mask Tor data by masquerading as something innocuous. 
+
+Hypertext Pluggable Transport (htpt) is a SOCKS proxy that is designed to be the precursor of a Tor Pluggable Transport. htpt is designed to mask a data stream by converting the data stream into a series of HTTP requests, responses, and image data. It is extensible in that further encoding schemes can be used to encode stream data into HTTP-related resources. htpt provides resistance to DPI by appearing to be an HTTP stream, which are generally not blocked by even the most repressive of governments. 
+ 
