@@ -1,11 +1,9 @@
 \section{Future Work}
 
+There are significant possibilities for expanding this work. The initial intent was to develop a Pluggable Transport, and this is the most important piece of future enhancement. This would involve either modifying obfsproxy or manually integrating with with Tor.
 
-%%%
-%Actually make it a PT
-%What sort of enhancements are there? 
-%    - Enhance authentication
-%    - Look at replay attacks again
-%    - Encrypt the data to hide the header's possible fingerprintability.
-%    - Diffie-Hellman Key exchange for the encryption key? May be overkill
-%%%
+Another further enhancement is to enhance authentication. Current authentication is basic HTTP's basic access authentication. This is very simplistic, and any information is sent in plaintext. Clearly, that is a security problem, so a more secure authentication scheme is justified.
+
+Replay attacks have not been explicitly looked into. These need to be looked at in greater detail to determine if further mitigation is needed.
+
+There is the possibility of the fingerprinting the header that all packets have. It would be hard to do, and would require stateful DPI but would be possible. To mitigate this, encrypting the header or the entire packet again would be mitigate this. Encrypting the header is less costly computationally, and would be more than sufficient. Implementing some sort of key exchange algorithm (e.g., Diffie-Hellman) would be necessary as well.
