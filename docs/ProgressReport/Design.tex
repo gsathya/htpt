@@ -25,7 +25,7 @@ Reasonable performance, as measured by both `goodput' and latency, is a desired 
 \subsection{Architecture}
 The overall architecture is represented in Figure~\ref{fig:overall_arch}. It is a basic client-server model, but with several important additional layers.
 
-\begin{figure}[h]
+\begin{figure}[t]
 \centering
 \includegraphics[width=0.7\textwidth]{Overall_architecture}
 \caption{Overall Architecture}
@@ -38,9 +38,9 @@ The server-side from the top down is very similar: Tor connects via SOCKS with h
 
 The reverse is also true: traffic from the Tor Bridge to the Tor client goes through the same layers, just in reverse. 
 
-\begin{figure}[h]
+\begin{figure}[b]
 \centering
-\includegraphics[width=0.3\textwidth]{htpt_architecture2}
+\includegraphics[width=0.3\textwidth]{htpt_architecture}
 \caption{Modules within htpt}
 \label{fig:htpt_modules}
 \end{figure}
