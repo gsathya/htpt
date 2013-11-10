@@ -31,9 +31,6 @@ class SeqNumber():
     self._lock.release()
     return self.seqNum
 
-class SessionID():
-  """Class to generate session ID"""
-
 class Framer():
   """Class to reassemble the Tor stream"""
 
@@ -135,12 +132,14 @@ class Encoder:
     self.seqNum = SeqNumber()
     self.output = None
 
-  def generateFlags(self, more_data):
+  def generateFlags(self, **kwargs):
     """Generates a 4-bit string of bits
 
-    Parameters: more_data- boolean True if more data
+    Parameters: kwargs - dictionary of flags
     currently, the only flag we set is the MSB for more data"""
 
+    if 'more_data' in kwargs:
+        more_data = kwargs['more_data']
     if more_data:
       flags = '1000'
     else:
@@ -162,7 +161,7 @@ class Encoder:
     sessionID = None
     return sessionID
 
-  def getHeaders(self):
+  def getHeaders(self, **kwargs):
     """Create a 4 byte struct header in network byte order
 
     16-bit sequence num | 8-bit session ID | 4-bit flag | 4-bit nonce
@@ -171,7 +170,7 @@ class Encoder:
     Calls functions to get:
     seqNum- 2 byte sequence number of the frame
     sessionID - 1 byte
-    flags - 4 bit string. currently only '1000' if More data
+    flags - 4 bit string. check kwargs and set appropriate bit
     nonce - integer. randomized value [0,15]
 
     returns: header string (struct) packedused in assemble function
@@ -180,9 +179,7 @@ class Encoder:
 
     seqNum = self.getSeqNum()
     sessionID = self.getSessionID()
-    # TODO check for more_data = 1 if data > 40 bytes ?
-    more_data = 0
-    flags = self.generateFlags(more_data)
+    flags = self.generateFlags(**kwargs)
     nonce = self.generateNonce()
 
     flags_and_nonce = (int(flags,2) << 4) | nonce
@@ -194,11 +191,12 @@ class Encoder:
     # TODO: send self.output to the interwebz
     self.output = None
 
-  def encode(self, data):
-    """Assemble frame as headers + data"""
+  def encode(self, data, **kwargs):
+    """Assemble frame as headers + data
 
-    # TODO: need to add a check for data length?
-    headers = self.getHeaders()
+    **kwargs is dict of flags to be set in headers"""
+
+    headers = self.getHeaders(**kwargs)
     self.output = urlEncode.encode(headers+data, 'market')
     # when unassembling: data = headers+data[4:]
     self.flush()
@@ -229,8 +227,9 @@ class Decoder:
     self.sessionID = headerTuple[1]
     mask = int('0b1111',2)
     self.flags = bin(headerTuple[2] & (mask << 4)) >> 4)[2:]
+    # TODO: if flags = '1000' i.e. more_data, then send pull_request to
+    # server for more data
     self.nonce = headerTuple[2] & mask
-    # TODO: send these headers somewhere? if more_data then loop?
 
   def flush(self):
     # TODO: send self.output to Tor
