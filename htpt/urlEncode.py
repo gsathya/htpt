@@ -173,6 +173,9 @@ def encodeAsMarket(data):
   else:
     padSize = 0
     padding = ''
+  #this is a one liner to convert the data length counter (the first 2
+  #characters of the hash) from base 16 (hex) to a base 10 integer
+  #that I can use
   dataLen = hex(len(hexData))[2:]
   if len(dataLen) == 1:
     dataLen = '0' + dataLen

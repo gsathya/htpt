@@ -130,6 +130,9 @@ class TestUrlEncode(unittest.TestCase):
         #the data
         hashPart = matches.group('hash')
         self.assertEqual(len(hashPart), 80)
+        #as with the real code in urlEncode, this is a one liner to
+        #convert the data length counter from hex into an integer that
+        #we can use later
         dataLen = int(hashPart[:2], 16)
         testDatum = hashPart[2:dataLen+2]
         testDatum = binascii.unhexlify(testDatum)
