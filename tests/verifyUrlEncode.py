@@ -282,5 +282,14 @@ class TestUrlEncode(unittest.TestCase):
       testOutput = urlEncode.encodeAsEnglish(datum)
       self.assertEqual(datum, urlEncode.decodeAsEnglish(testOutput))
 
+  def test_isGoogle(self):
+    pass
+
+  def test_decodeAsGoogle(self):
+    pass
+
+  def test_encodeAsGoogle(self):
+    pass
+
 if __name__ == '__main__':
   unittest.main()

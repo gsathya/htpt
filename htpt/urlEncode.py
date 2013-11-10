@@ -253,6 +253,20 @@ def decodeAsBaidu(url):
   data = decodeAsEnglish(words)
   return data
 
+def isGoogle(url):
+  """
+  Check if the url is hiding data in a form which resembles Google
+  searches
+
+  parameters: url- the url to check
+
+  """
+  pattern = 'http://www.google.com/search\?q=(?P<query>[a-zA-Z0-9+]+)'
+  matches = re.match(pattern, url)
+  if matches != None:
+    return True
+  return False
+
 def encodeAsGoogle(data):
   """
   Hide data in a url that fits the form of Google searches
@@ -269,10 +283,28 @@ def encodeAsGoogle(data):
   Example: https://www.google.com/search?q=freedom+is+nice
 
   """
-  pass
+  #if the data is over 40 chars, then use cookies
+  urlData = data
+  cookies = []
+  if len(data) > 40:
+    urlData = data[:40]
+    cookies = encodeAsCookies(data[40:])
+  words = encodeAsEnglish(urlData)
+  urlData = '+'.join(words)
+  url = 'http://www.google.com/search/?q=' + urlData
+  encodedData = {'url':url, 'cookie':cookies}
+  return encodedData
+
 
 def decodeAsGoogle(data):
-  pass
+  """Decode data hidden within a google search query"""
+  
+  pattern = 'http://www.google.com/search/\?q=(?P<englishText>[a-zA-Z0-9+]+)'
+  matches = re.match(pattern, url)
+  urlData = matches.group('englishText')
+  words = urlData.split('+')
+  data = decodeAsEnglish(words)
+  return data
 
 def encodeAsEnglish(data):
   """Serialize data using english words for symbols"""
