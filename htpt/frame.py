@@ -31,6 +31,9 @@ class SeqNumber():
     self._lock.release()
     return self.seqNum
 
+class SessionID():
+  """Class to generate session ID"""
+
 class Framer():
   """Class to reassemble the Tor stream"""
 
