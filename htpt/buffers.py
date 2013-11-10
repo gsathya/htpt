@@ -17,14 +17,17 @@ class Buffer:
       self.buffer.append(data[:buffer_space_rem])
       data = data[buffer_space_rem:]
 
+      # set flags to pass to encode function
+      # currently we have only one flag to denote more data
+      kwargs = {'more_data':1}
       # flush the buffer
-      self.flushBuffer()
+      self.flushBuffer(**kwargs)
 
       # repeat till we have no data
       self.addData(data)
     else:
       self.buffer.append(data)
 
-  def flushBuffer(self):
-    self.callback(self.buffer)
+  def flushBuffer(self, **kwargs):
+    self.callback(self.buffer, **kwargs)
     self.buffer = []
