@@ -258,7 +258,12 @@ def isGoogle(url):
   Check if the url is hiding data in a form which resembles Google
   searches
 
-  parameters: url- the url to check
+  Parameters: url- the url to check
+
+  Note: since this is regular expression matching, it will not catch
+  cases where jibberish is inserted into or appended onto urls. For
+  instance, the string ...?q=the+@asdf would pass because the regular
+  expression would only match the+a
 
   """
   pattern = 'http://www.google.com/search\?q=(?P<query>[a-zA-Z0-9+]+)'
@@ -291,15 +296,15 @@ def encodeAsGoogle(data):
     cookies = encodeAsCookies(data[40:])
   words = encodeAsEnglish(urlData)
   urlData = '+'.join(words)
-  url = 'http://www.google.com/search/?q=' + urlData
+  url = 'http://www.google.com/search?q=' + urlData
   encodedData = {'url':url, 'cookie':cookies}
   return encodedData
 
 
-def decodeAsGoogle(data):
+def decodeAsGoogle(url):
   """Decode data hidden within a google search query"""
   
-  pattern = 'http://www.google.com/search/\?q=(?P<englishText>[a-zA-Z0-9+]+)'
+  pattern = 'http://www.google.com/search\?q=(?P<englishText>[a-zA-Z0-9+]+)'
   matches = re.match(pattern, url)
   urlData = matches.group('englishText')
   words = urlData.split('+')

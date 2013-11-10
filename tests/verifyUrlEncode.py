@@ -283,13 +283,61 @@ class TestUrlEncode(unittest.TestCase):
       self.assertEqual(datum, urlEncode.decodeAsEnglish(testOutput))
 
   def test_isGoogle(self):
-    pass
+    """Verify that urls are correctly identified as Google url"""
+
+    trueData = ['http://www.google.com/search?q=this+is+a+test',
+                'http://www.google.com/search?q=a+the+adsfasd']
+    falseData = ['http://www.baidu.com/search?q=this+is+a+test',
+                 'http://www.google.com/search?q=%09808']
+    for datum in trueData:
+      self.assertTrue(urlEncode.isGoogle(datum))
+    for datum in falseData:
+      self.assertFalse(urlEncode.isGoogle(datum))
 
   def test_decodeAsGoogle(self):
-    pass
+    """Verify that encoded text can be decoded again
+    
+    Dependencies: encodeAsGoogle
+
+    """
+    testData = ['some text', 'another test', 'still more text',
+                'an example that is liable to introduce cookies'
+                '- scrumptous, scrumptous cookies']
+    for datum in testData:
+      testOutput = urlEncode.encodeAsGoogle(datum)
+    cookieData = []
+    for cookie in testOutput['cookie']:
+      cookieData.append(urlEncode.decodeAsCookie(cookie))
+    cookieData = ''.join(cookieData)
+    urlData = urlEncode.decodeAsGoogle(testOutput['url'])
+    self.assertEqual(datum, urlData + cookieData)
 
   def test_encodeAsGoogle(self):
-    pass
+    """Verify that data can be properly hidden as a google search
+    string
+
+    Dependencies: decodeAsEnglish, decodeAsCookie
+    
+    """
+    testData = ['some text', 'another test', 'still more text',
+                'an example that is liable to introduce cookies'
+                '- scrumptous, scrumptous cookies']
+    for datum in testData:
+      testOutput = urlEncode.encodeAsGoogle(datum)
+      #assert that cookies were created if needed
+      if len(datum) > 40:
+        self.assertNotEqual(testOutput['cookie'], [])
+      #assert that the url is in the correct form
+      pattern = 'http://www.google.com/search\?q=(?P<data>[a-zA-Z+]+)'
+      matches = re.match(pattern, testOutput['url'])
+      self.assertIsNotNone(matches)
+      #assert that the url and cookies correctly decode
+      words = matches.group('data')
+      words = words.split('+')
+      decoded = urlEncode.decodeAsEnglish(words)
+      for cookie in testOutput['cookie']:
+        decoded += urlEncode.decodeAsCookie(cookie)
+      self.assertEqual(datum, decoded)
 
 if __name__ == '__main__':
   unittest.main()
