@@ -19,9 +19,10 @@ class TestUrlEncode(unittest.TestCase):
                 'this is a longer sequence of characters'
                 'which should be longer than a normal url']
     for datum in testData:
-      #todo update this to enumerate all types of valid url encoding
-      #schemes and test each one
       testOutput = urlEncode.encode(datum, 'market')
+      testDecode = urlEncode.decode(testOutput)
+      self.assertEqual(datum, testDecode)
+      testOutput = urlEncode.encode(datum, 'baidu')
       testDecode = urlEncode.decode(testOutput)
       self.assertEqual(datum, testDecode)
 
@@ -129,8 +130,12 @@ class TestUrlEncode(unittest.TestCase):
         #the data
         hashPart = matches.group('hash')
         self.assertEqual(len(hashPart), 80)
-        hashPart = hashPart.rstrip('ABCDEF')
-        testDatum = binascii.unhexlify(hashPart)
+        #as with the real code in urlEncode, this is a one liner to
+        #convert the data length counter from hex into an integer that
+        #we can use later
+        dataLen = int(hashPart[:2], 16)
+        testDatum = hashPart[2:dataLen+2]
+        testDatum = binascii.unhexlify(testDatum)
         for cookie in output['cookie']:
           testDatum += urlEncode.decodeAsCookie(cookie)
         self.assertEqual(testDatum, datum)
@@ -152,18 +157,22 @@ class TestUrlEncode(unittest.TestCase):
     """Verify that decodeAsMarket correctly decodes data"""
 
     testData = [ self.gen_random_hex_chars() for index in range(5)]
-    testData[4] = testData[4][:76]
-    testStrings = [binascii.unhexlify(datum) for datum in testData]
+    testData[4] = testData[4][:78]
+    testData[4] = hex(70)[2:] + testData[4]
+    testStrings = []
+    for datum in testData:
+      dataLen = int(datum[:2], 16)
+      testStrings.append(binascii.unhexlify(datum[2:dataLen+2]))
 
     #include a test to be sure that we can correctly decode padding
-    testData[4] += "ABCD"
     for datum in testData:
       #Note: as with urlEncode, we cannot use urlparse because it
       #converts hex to uppercase and we are using uppercase for
       #padding, lowercase for data
       url = 'http://' + 'click.live.com?qs=' + datum
       testOutput = urlEncode.decodeAsMarket(url)
-      testString = binascii.unhexlify(datum.rstrip('ABCDEF'))
+      dataLen = int(datum[:2], 16)
+      testString = binascii.unhexlify(datum[2:dataLen+2])
       self.assertEqual(testOutput, testString)
 
   def gen_random_hex_chars(self):
@@ -172,9 +181,106 @@ class TestUrlEncode(unittest.TestCase):
     characters = ['0','1','2','3','4','5','6','7',
                   '8','9','a','b','c','d','e','f']
     stringy = []
-    for x in range(80):
+    length = randint(1, 39)
+    length = length *2
+    lenStr = hex(length)[2:]
+    if len(lenStr) == 1:
+      stringy.append('0'+lenStr)
+    else:
+      stringy.append(lenStr)
+    for x in range(78):
       stringy.append(choice(characters))
     return ''.join(stringy)
+
+  def test_isBaidu(self):
+    """verify that we can detect urls of the form
+    http://www.baidu.com/s?wd=text+other"""
+
+    trueUrls = ['http://www.baidu.com/s?wd=mao+is+cool&rsv_bp='
+            '0&ch=&tn=baidu&bar=&rsv_spt=3&ie=utf-8',
+            'http://www.baidu.com/s?wd=freedom+is+nice'
+            '&rsv_bp=0&rsv_spt=3&ie=utf-8']
+    falseUrls = ['http://www.google.com', 'stirngy']
+    for url in trueUrls:
+      self.assertTrue(urlEncode.isBaidu(url))
+    for url in falseUrls:
+      self.assertFalse(urlEncode.isBaidu(url))
+
+  def test_decodeAsBaidu(self):
+    """
+    Verify that we correctly decode Baidu urls
+
+    Note: we are just testing that we can decode what we encode. We
+    are relying on the test_encodeAsBaidu functionality to make sure
+    that the encoding correctly hides the data
+
+    Dependencies: this function depends on encodeAsBaidu and decodeAsCookie
+
+    """
+    testData = ['this is a string', 'some-data-that-appears-mildly'
+                '-long-and-hopefully-_exceeds40chars',
+                'another string']
+    for datum in testData:
+      testOutput = urlEncode.encodeAsBaidu(datum)
+      cookieData = []
+      for cookie in testOutput['cookie']:
+        cookieData.append(urlEncode.decodeAsCookie(cookie))
+      cookieData = ''.join(cookieData)
+      urlData = urlEncode.decodeAsBaidu(testOutput['url'])
+      self.assertEqual(datum, urlData + cookieData)
+
+  def test_encodeAsBaidu(self):
+    """
+    Verify that the Baidu encoding actually looks like it should
+
+    Dependencies: decodeAsEnglish, decodeAsCookie
+
+    """
+    testData = ['this is a string', 'some-data-that-appears-mildly'
+                '-long-and-hopefully-_exceeds40chars',
+                'another string']
+    for datum in testData:
+      testOutput = urlEncode.encodeAsBaidu(datum)
+      #assert that cookies were created if needed
+      if len(datum) > 40:
+        self.assertNotEqual(testOutput['cookie'], [])
+      #assert that the url is in the correct form
+      pattern = 'http://www.baidu.com/s\?wd=(?P<data>[\S+]+)'
+      matches = re.match(pattern, testOutput['url'])
+      self.assertIsNotNone(matches)
+      #assert that the url and cookies correctly decode
+      words = matches.group('data')
+      words = words.split('+')
+      decoded = urlEncode.decodeAsEnglish(words)
+      for cookie in testOutput['cookie']:
+        decoded += urlEncode.decodeAsCookie(cookie)
+      self.assertEqual(datum, decoded)
+
+  def test_encodeAsEnglish(self):
+    """Verify that we are correctly encoding text as english"""
+
+    testData = ['some text', 'more texty things',
+                'but wait, there is even more and you even get a :']
+    for datum in testData:
+      testOutput = urlEncode.encodeAsEnglish(datum)
+      #test that we are using the correct format
+      for word in testOutput:
+        self.assertIn(word, urlEncode.LOOKUP_TABLE)
+      #verify that test decodes correctly
+      testString = []
+      for word in testOutput:
+        testString.append(urlEncode.REVERSE_LOOKUP_TABLE[word])
+      testString = ''.join(testString)
+      self.assertEqual(datum, binascii.unhexlify(testString))
+
+  def test_decodeAsEnglish(self):
+    """Verify that we can correctly decode the hidden data"""
+
+    testData = ['somethinga45lkh;asf wonddeasdful', 'other',
+                'stuffy awesomeness']
+    for datum in testData:
+      testOutput = urlEncode.encodeAsEnglish(datum)
+      self.assertEqual(datum, urlEncode.decodeAsEnglish(testOutput))
 
 if __name__ == '__main__':
   unittest.main()
