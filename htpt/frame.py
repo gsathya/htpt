@@ -4,25 +4,24 @@
 # frame.py: ensure in-order delivery of frames for the htpt project
 
 import threading
-import numpy as np
 import struct
 from random import randint
 
 import urlEncode
 from constants import *
 
+
 class FramingException(Exception):
   pass
 
+
 class SeqNumber():
-  self.seqNum = 0
-  self.initialized = False
-  self._lock = threading.Lock()
 
   def __init__(self, seqNum = 0):
     """Initialize the framing package with the given sequence number"""
     self.seqNum = seqNum
     self.initialized = True
+    self._lock = threading.Lock()
 
   def getSequenceAndIncrement(self):
     """In a thread safe manner, get the sequence number"""
@@ -226,7 +225,7 @@ class Decoder:
     self.seqNum = headerTuple[0]
     self.sessionID = headerTuple[1]
     mask = int('0b1111',2)
-    self.flags = bin(headerTuple[2] & (mask << 4)) >> 4)[2:]
+    self.flags = bin((headerTuple[2] & (mask << 4)) >> 4)[2:]
     # TODO: if flags = '1000' i.e. more_data, then send pull_request to
     # server for more data
     self.nonce = headerTuple[2] & mask
