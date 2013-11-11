@@ -16,7 +16,6 @@ class FramingException(Exception):
 
 
 class SeqNumber():
-
   def __init__(self, seqNum = 0):
     """Initialize the framing package with the given sequence number"""
     self.seqNum = seqNum
@@ -29,6 +28,7 @@ class SeqNumber():
     self.seqNum = ((self.seqNum + 1) % MAX_SEQ_NUM)
     self._lock.release()
     return self.seqNum
+
 
 class Framer():
   """Class to reassemble the Tor stream"""
@@ -96,7 +96,7 @@ class Framer():
     #frames and seeing if we meet the min threshold to send up
     dataToSend = 0
     for index in range(BUFFER_SIZE):
-      if self.buffer[index] == None:
+      if self.buffer[index] is None:
         #we have found all sendable data
         break
       else:
@@ -106,7 +106,7 @@ class Framer():
     if dataToSend > MIN_SIZE_TO_PASS_UP:
       availableData = ''
       #coalesce every data element up to the first missing sequence
-      while self.buffer[0] != None:
+      while self.buffer[0] is not None:
         availableData += self.buffer.pop(0)
         self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
         self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
@@ -117,15 +117,15 @@ class Framer():
     """Send all in order data up to the callback function"""
 
     availableData = ''
-    while self.buffer[0] != None:
+    while self.buffer[0] is not None:
       availableData += self.buffer.pop(0)
       self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
       self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
       self.buffer.append(None)
     self.recvData(availableData)
 
-class Encoder:
 
+class Encoder:
   def __init__(self):
     """Initialize SeqNumber object"""
     self.seqNum = SeqNumber()
