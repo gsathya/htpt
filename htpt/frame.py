@@ -134,13 +134,15 @@ class Encoder:
   def generateFlags(self, **kwargs):
     """Generates a 4-bit string of bits
 
-    Parameters: kwargs - dictionary of flags
-    currently, the only flag we set is the MSB for more data"""
+    Parameters: kwargs- additional keyword arguments specified for the
+    function. Currently, the only additional option has the keyword of
+    'more_data' and a boolean value (0/1) which sets the more_data bit
+    (MSB) in the header. Example syntax: generateFlags(more_data=1)"""
 
     if 'more_data' in kwargs:
-        more_data = kwargs['more_data']
-    if more_data:
-      flags = '1000'
+      more_data = kwargs['more_data']
+      if more_data:
+        flags = '1000'
     else:
       flags = '0000'
     return flags
@@ -157,7 +159,7 @@ class Encoder:
 
   def getSessionID(self):
     # TODO not sure how to set session IDs
-    sessionID = None
+    sessionID = 0
     return sessionID
 
   def getHeaders(self, **kwargs):
@@ -168,7 +170,7 @@ class Encoder:
 
     Calls functions to get:
     seqNum- 2 byte sequence number of the frame
-    sessionID - 1 byte
+    sessionID - 1 byte (currently None)
     flags - 4 bit string. check kwargs and set appropriate bit
     nonce - integer. randomized value [0,15]
 
