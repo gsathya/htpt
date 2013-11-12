@@ -177,23 +177,26 @@ class Assemble():
 
     """
 
-    seqNum = self.getSeqNum()
-    sessionID = self.getSessionID()
-    flags = self.generateFlags(**kwargs)
-    nonce = self.generateNonce()
+    self.seqNum = self.getSeqNum()
+    self.sessionID = self.getSessionID()
+    self.flags = self.generateFlags(**kwargs)
+    self.nonce = self.generateNonce()
 
-    flags_and_nonce = (int(flags,2) << 4) | nonce
-    headerString = struct.pack('!HBB', seqNum, sessionID, flags_and_nonce)
+    flags_and_nonce = (int(self.flags,2) << 4) | self.nonce
+    headerString = struct.pack('!HBB', self.seqNum, self.sessionID, flags_and_nonce)
 
     return headerString
 
   def flush(self):
     # TODO: send self.output to the interwebz
+    print self.output
     self.output = None
 
   def assemble(self, data, **kwargs):
     """Assemble frame as headers + data
 
+    Parameters: data, **kwargs
+    data is simply a string
     **kwargs is dict of flags to be set in headers"""
 
     headers = self.getHeaders(**kwargs)
@@ -214,7 +217,9 @@ class Disassemble:
     Parameters: frame is the encoded url or cookie. It should first
     be decoded by urlEncode.decode(), which will return bytes to be
     unassembled.
-    headers are the first 4 bytes, data is what follows."""
+    headers are the first 4 bytes, data is what follows.
+
+    we assume data is simply a string"""
 
     # first decode received frame
     frame = urlEncode.decode(packet)
@@ -223,9 +228,8 @@ class Disassemble:
     self.retrieveHeaders(headers)
 
     data = frame[4:]
-    for datum in data:
-      self.output = urlEncode.decode(datum)
-      self.flush()
+    self.output = data
+    self.flush()
 
   def retrieveHeaders(self, headers):
     """Extract 4 byte header to seqNum, sessionID, Flags, Nonce"""
