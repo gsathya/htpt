@@ -125,7 +125,7 @@ class Framer():
     self.recvData(availableData)
 
 
-class Encoder:
+class Assemble():
   def __init__(self):
     """Initialize SeqNumber object"""
     self.seqNum = SeqNumber()
@@ -191,22 +191,24 @@ class Encoder:
     # TODO: send self.output to the interwebz
     self.output = None
 
-  def encode(self, data, **kwargs):
+  def assemble(self, data, **kwargs):
     """Assemble frame as headers + data
 
     **kwargs is dict of flags to be set in headers"""
 
     headers = self.getHeaders(**kwargs)
+    frame = headers+data
+    # encode frame to packet and send output packet to flush()
     self.output = urlEncode.encode(headers+data, 'market')
-    # when unassembling: data = headers+data[4:]
+    # when unassembling: decoded data = headers+data[4:]
     self.flush()
 
 
-class Decoder:
+class Disassemble:
   def __init__(self):
     self.output = None
 
-  def decode(self, packet):
+  def disassemble(self, packet):
     """Decode, then Unassemble received frame to headers and data
 
     Parameters: frame is the encoded url or cookie. It should first
@@ -217,7 +219,7 @@ class Decoder:
     # first decode received frame
     frame = urlEncode.decode(packet)
     # then split to headers + data
-    headers = packet[:4]
+    headers = frame[:4]
     self.retrieveHeaders(headers)
 
     data = frame[4:]
