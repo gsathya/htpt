@@ -23,7 +23,7 @@ Preventing obvious fingerprintable behaviors is also a desired goal. This means 
 Reasonable performance, as measured by both `goodput' and latency, is a desired goal. Latency is most important for users of interactive websites, while reasonable goodput is required for uploading and downloading bulk data. 
 
 \subsection{Motivations}
-Though it seems odd to add yet another layer to an already tall stack, HTPT is similar to other protocols like IPSEC. It seems like the additional layer would introduce excessive overhead, but the purpose of this layer is to provide security first and performance second. This layer can be removed or inserted as necessary and is not required to exist. Despite the focus of this protocol on security, the size of images allow large amounts of data to be sent with limited headers.
+Though it seems odd to add yet another layer to an already tall stack, HTPT is similar to other protocols like IPSEC. It seems like the additional layer would introduce excessive overhead, but the purpose of this layer is to provide security first and performance second. This layer can be removed or inserted as necessary and is not required to exist. Despite the focus of this protocol on security, the size of images allow large amounts of data to be sent with limited headers. The limited overhead from headers should allow HTPT to achieve high throughput.
 
 \cite{Ref2} discusses the need to use the applications themselves and not just the protocol to obfuscate traffic. Otherwise adversaries can easily identify obfuscated traffic by finding differences in implementations of the protocols by the application and by the obfuscating layer. For example, Apache may implement a particular part of HTTP different from specification, while the obfuscating layer may not. This would make it susceptible to fingerprinting. As such, using actual applications for generating HTTP requests and responses will be necessary.
 
@@ -72,7 +72,7 @@ There are currently six developed encoding modules. Each takes in a common heade
 
 \begin{enumerate}
   \item \emph{Advertising URL Encoder} --- This encodes 39 bytes of data (plus 1 byte for a header telling the length of the data) at a time by mimicking an advertising header. These frequently have 80-character hex-encoded identifiers contained within them, and are useful for encoding small amounts of data from the client to the server.
-  \item \emph{Google Search String Encoder} --- This encodes variable amounts of data, albeit small amounts of data. Initial implementation uses 16 common English words to represent 4-bits of data, effectively acting as a hex encoder. These are then places in what looks like a Google search string that can be decoded on the receiving end.
+  \item \emph{Google Search String Encoder} --- This encodes variable, albeit small, amounts of data. Initial implementation uses 16 common English words to represent 4-bits of data, effectively acting as a hex encoder. These are then places in what looks like a Google search string that can be decoded on the receiving end.
   \item \emph{Baidu Search String Encoder} --- This is a similar scheme as the Google Search String Encoder, except that it is designed to create Baidu-like search strings.
   \item \emph{Cookie Encoder Encoder} --- When data is encoded with one of 3 URL encoding schemes listed above, the URL can only be used to store 40 bytes of data. Every byte sent to the URL encoder beyond 40 bytes will be encoded as a series of cookies. Essentially, the data will be split into a key and a value, then compressed with Base64 encoding. When a GET request is sent to the server, each cookie is added as a field in the HTTP header.
   \item \emph{BMP Encoder} --- This is the most basic image encoder. A valid bitmap header is created, then the raw data makes up the image data.
@@ -81,13 +81,13 @@ There are currently six developed encoding modules. Each takes in a common heade
 \end{enumerate}
 
 \subsection{Framing and Performance Implications}
-As noted above, the encoding is an encapsulation scheme. The data from Tor, or any other SOCKS enabled client, is treated as a byte-stream, much like data that is sent via TCP. A 4-byte header is attached on each segment sent. The segment is then wrapped based on the encoding scheme, which is where the overhead comes into play.
+As noted above, the encoding is an encapsulation scheme. The data from Tor, or any other SOCKS enabled client, is treated as a byte-stream, much like data that is sent via TCP. A 4-byte header is attached on each segment sent. The segment is then encoded according to the selected scheme which is where the overhead comes into play. As development completes, the performance of the protocol will be evaluated experimentally.
 
 
-TODO: NEED A DIAGRAM OF HEADER
+%TODO: NEED A DIAGRAM OF HEADER
 
 
-As one of the design goals is to have reasonable goodput performance, the overhead must be discussed. 
+%As one of the design goals is to have reasonable goodput performance, the overhead must be discussed. 
 
 
-TODO: NEED A TABLE OF OVERHEAD RATIOS, MINIMUM AND MAXIMUM, number of bytes of overhead per item.
+%TODO: NEED A TABLE OF OVERHEAD RATIOS, MINIMUM AND MAXIMUM, number of bytes of overhead per item.
