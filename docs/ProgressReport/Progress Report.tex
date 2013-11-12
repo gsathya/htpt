@@ -27,6 +27,17 @@
 \usepackage{array,booktabs,arydshln,xcolor}
 \usepackage{graphicx}
 \newcommand\VRule[1][\arrayrulewidth]{\vrule width #1}
+\usepackage{wasysym}
+
+\newenvironment{checklist}{%
+  \begin{list}{}{}% whatever you want the list to be
+  \let\olditem\item
+  \renewcommand\item{\olditem[$\Box$] }
+  \newcommand\checkeditem{\olditem[$\CheckedBox$]}
+
+}{%
+  \end{list}
+}
 
 \def\draftmode{}
 \ifx\draftmode\undefined

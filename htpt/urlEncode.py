@@ -9,6 +9,12 @@ from random import choice, randint
 
 AVAILABLE_TYPES=['market', 'baidu', 'google']
 BYTES_PER_COOKIE=30
+LOOKUP_TABLE = ['a', 'an', 'the', 'what', 'if', 'but', 'he', 'she',
+                'it', 'and', 'who', 'when', 'is', 'am', 'are', 'was']
+REVERSE_LOOKUP_TABLE = {'a':'0', 'an':'1', 'the':'2', 'what':'3',
+                        'if':'4', 'but':'5', 'he':'6', 'she':'7',
+                        'it':'8', 'and':'9', 'who':'A', 'when':'B',
+                        'is':'C', 'am':'D', 'are':'E', 'was':'F'}
 
 class UrlEncodeError(Exception):
   pass
@@ -41,10 +47,8 @@ def encode(data, encodingType):
   if encodingType not in AVAILABLE_TYPES:
       raise(UrlEncodeError("Bad encoding type. Please refer to"
                            "url-encode.AVAILABLE_TYPES for available options"))
-
   if encodingType == 'market':
     return encodeAsMarket(data)
-  #todo write these functions
   elif encodingType == 'baidu':
     return encodeAsBaidu(data)
   elif encodingType == 'google':
@@ -151,25 +155,38 @@ def encodeAsMarket(data):
   cookies.
 
   Note: Cookies will be used to store information if the data is over
-  40 characters.
+  39 characters.
 
   """
-  urlData = data
   cookies = []
-  if len(data) > 40:
-    urlData = data[:40]
-    cookies = encodeAsCookies(data[40:])
-  urlData = binascii.hexlify(urlData)
-  #pad the data to 80 characters
-  while len(urlData) < 80:
-    urlData += pickRandomHexChar()
+  if len(data) > 39:
+    cookies = encodeAsCookies(data[39:])
+    data = data[:39]
+  #if needed, pad the data to 80 characters
+  hexData = binascii.hexlify(data)
+  if len(hexData) < 78:
+    padSize = 78-len(hexData)
+    padding = []
+    for index in range(padSize):
+      padding.append(pickRandomHexChar())
+    padding = ''.join(padding)
+  else:
+    padSize = 0
+    padding = ''
+  #this is a one liner to convert the data length counter (the first 2
+  #characters of the hash) from base 16 (hex) to a base 10 integer
+  #that I can use
+  dataLen = hex(len(hexData))[2:]
+  if len(dataLen) == 1:
+    dataLen = '0' + dataLen
+  urlData = dataLen + hexData + padding
   domain = pickDomain()
   #Note: we cannot use urlparse here because it capitalizes our hex
   #values and we are using uppercase to distinguish padding and
   #actual text
   url = 'http://' + 'click.' + domain + '?qs=' + urlData
-  retVal = {'url':url, 'cookie':cookies}
-  return retVal
+  encodedData = {'url':url, 'cookie':cookies}
+  return encodedData
 
 def isMarket(url):
   """Return true if this url matches the market pattern"""
@@ -178,6 +195,144 @@ def isMarket(url):
   if matches != None:
       return True
   return False
+
+def encodeAsBaidu(data):
+  """
+  Hide data inside the url by a chinese search engine for queries
+
+  Parameters:
+  data- the data to encode
+
+  Returns: a dictionary with the key 'url' referencing a string
+  holding the url and the key 'cookie' holding an array of 0 or more
+  cookies.
+
+  Note: Cookies will be used to store information if the data is over
+  39 characters.
+
+  Example: http://www.baidu.com/s?wd=mao+is+cool&rsv_bp=0&ch=&tn=baidu&bar=&rsv_spt=3&ie=utf-8
+
+  """
+  urlData = data
+  cookies = []
+  if len(data) > 40:
+    urlData = data[:40]
+    cookies = encodeAsCookies(data[40:])
+  words = encodeAsEnglish(urlData)
+  urlData = '+'.join(words)
+  #Note: we cannot use urlparse here because it capitalizes our hex
+  #values and we are using uppercase to distinguish padding and
+  #actual text
+  url = 'http://www.baidu.com/s?wd=' + urlData
+  encodedData = {'url':url, 'cookie':cookies}
+  return encodedData
+
+def isBaidu(url):
+  """Return True if this url matches the pattern for Baidu searches"""
+
+  #Example: http://www.baidu.com/s?wd=mao+is+cool&rsv_bp=0&ch=&tn=baidu&bar=&rsv_spt=3&ie=utf-8
+  pattern = 'http://www.baidu.com/s\?wd=[\S+]+'
+  matches = re.match(pattern, url)
+  if matches != None:
+      return True
+  return False
+
+def decodeAsBaidu(url):
+  """
+  Decode data hidden inside a url format for searches
+
+  Parameters: url- the url to decode
+
+  Returns: a string with the decoded data
+
+  """
+  pattern = 'http://www.baidu.com/s\?wd=(?P<englishText>[a-zA-Z0-9+]+)'
+  matches = re.match(pattern, url)
+  urlData = matches.group('englishText')
+  words = urlData.split('+')
+  data = decodeAsEnglish(words)
+  return data
+
+def isGoogle(url):
+  """
+  Check if the url is hiding data in a form which resembles Google
+  searches
+
+  Parameters: url- the url to check
+
+  Note: since this is regular expression matching, it will not catch
+  cases where jibberish is inserted into or appended onto urls. For
+  instance, the string ...?q=the+@asdf would pass because the regular
+  expression would only match the+a
+
+  """
+  pattern = 'http://www.google.com/search\?q=(?P<query>[a-zA-Z0-9+]+)'
+  matches = re.match(pattern, url)
+  if matches != None:
+    return True
+  return False
+
+def encodeAsGoogle(data):
+  """
+  Hide data in a url that fits the form of Google searches
+
+  Parameters: data- the data to hide
+
+  Returns: a dictionary with the key 'url' referencing a string
+  holding the url and the key 'cookie' holding an array of 0 or more
+  cookies.
+
+  Note: Cookies will be used to store information if the data is over
+  39 characters.
+
+  Example: https://www.google.com/search?q=freedom+is+nice
+
+  """
+  #if the data is over 40 chars, then use cookies
+  urlData = data
+  cookies = []
+  if len(data) > 40:
+    urlData = data[:40]
+    cookies = encodeAsCookies(data[40:])
+  words = encodeAsEnglish(urlData)
+  urlData = '+'.join(words)
+  url = 'http://www.google.com/search?q=' + urlData
+  encodedData = {'url':url, 'cookie':cookies}
+  return encodedData
+
+
+def decodeAsGoogle(url):
+  """Decode data hidden within a google search query"""
+  
+  pattern = 'http://www.google.com/search\?q=(?P<englishText>[a-zA-Z0-9+]+)'
+  matches = re.match(pattern, url)
+  urlData = matches.group('englishText')
+  words = urlData.split('+')
+  data = decodeAsEnglish(words)
+  return data
+
+def encodeAsEnglish(data):
+  """Serialize data using english words for symbols"""
+
+  #first, convert the string to a hex representation
+  hexString = binascii.hexlify(data)
+  #and convert the hex representation into words
+  stringy = []
+  for char in hexString:
+    stringy.append(LOOKUP_TABLE[int(char, 16)])
+  return stringy
+
+def decodeAsEnglish(words):
+  """Convert data back to hex, then a string from english text"""
+
+  #first convert the english text back to hex
+  hexString = []
+  for word in words:
+    hexString.append(REVERSE_LOOKUP_TABLE[word])
+  hexString = ''.join(hexString)
+  #and convert the hex back to a string
+  data = binascii.unhexlify(hexString)
+  return data
 
 def decodeAsMarket(url):
   """
@@ -188,12 +343,12 @@ def decodeAsMarket(url):
   Returns: a string with the decoded data
 
   """
-
   pattern = 'click.*\?qs=(?P<hash>[0-9a-fA-F]*)'
   matches = re.search(pattern, url)
   data = matches.group('hash')
   # strip any padding
-  data = data.strip('ABCDEF')
+  dataLen = int(data[:2], 16)
+  data = data[2:dataLen+2]
   data = binascii.unhexlify(data)
   return data
 
@@ -213,6 +368,8 @@ def decode(protocolUnit):
   data = []
   if isMarket(url):
     data.append(decodeAsMarket(url))
+  elif isBaidu(url):
+    data.append(decodeAsBaidu(url))
   else:
     raise UrlEncodeError("Data does not match a known decodable type")
   for cookie in cookies:
