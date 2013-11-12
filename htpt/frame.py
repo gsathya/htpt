@@ -206,12 +206,18 @@ class Decoder:
   def __init__(self):
     self.output = None
 
-  def decode(self, frame):
-    """Unassemble received frame to headers and data
+  def decode(self, packet):
+    """Decode, then Unassemble received frame to headers and data
 
-    headers are the first 4 bytes"""
+    Parameters: frame is the encoded url or cookie. It should first
+    be decoded by urlEncode.decode(), which will return bytes to be
+    unassembled.
+    headers are the first 4 bytes, data is what follows."""
 
-    headers = frame[:4]
+    # first decode received frame
+    frame = urlEncode.decode(packet)
+    # then split to headers + data
+    headers = packet[:4]
     self.retrieveHeaders(headers)
 
     data = frame[4:]
