@@ -40,7 +40,8 @@ The overall architecture is represented in Figure~\ref{fig:overall_arch}. It is 
 On the client-side, there is a SOCKS interface that HTPT presents to its user, typically Tor as is represented here. HTPT is then connected to an HTTP sending module that interacts with the server-side.
 
 The server-side from the top down is very similar: Tor connects via SOCKS with HTPT. At this point, the design diverges significantly. For this, looking from the bottom up is useful. 
-The client uses Selenium, a web browser orchestration framework, in conjunction with the Tor Browser Bundle, a packaged Tor client and Firefox web browser, to properly simulate web traffic and handle errors. 
+%The client uses Selenium, a web browser orchestration framework, in conjunction with the Tor Browser Bundle, a packaged Tor client and Firefox web browser, to properly simulate web traffic and handle errors. 
+The client uses Headless Webkit, which is the Webkit browser engine that has been modified to not need user interaction to properly simulate web traffic and handle errors.
 The client connects to Apache, which is running the Web Server Gateway Interface module. This is a specification to allow web servers to communicate with web applications \cite{Ref16}. This is used to interface with the Authorization/Decision module that is part of the HTPT package. It is used to decide whether to send the traffic to the Image Gallery (for non-authorized traffic), or to the HTPT Passthrough (for authorized traffic). This is what it sounds: a simple passthrough. Traffic is then handed off the HTPT. 
 
 The reverse is also true: traffic from the Tor Bridge to the Tor client goes through the same layers, just in reverse. 

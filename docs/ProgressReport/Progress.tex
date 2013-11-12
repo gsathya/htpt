@@ -5,3 +5,38 @@
 % What is left to do
 % Mention descaling due to overly optimistic assumptions - Python bindings for Headless webkit had been phased out
 %%%
+In general, steady progress is being made. Most of the lower level modules are written and tested, and there is significant progress on the modules that are not finished yet. Integration of all the modules, along with the associated testing, will be challenging, but certainly doable in the few weeks that are left. 
+
+Below is a checklist from a high level that shows the current progress. All coding activities are at the top, followed by integration and testing. Further details follow the checklist.
+
+\begin{checklist}
+  \item Framing of data
+  \item Reassembly of stream (part of framing)
+  \checkeditem Generation of headers
+  \checkeditem Sequencing
+  \checkeditem Encoding as URL
+  \checkeditem Encoding as Cookie
+  \checkeditem Encoding as BMP
+  \checkeditem Encoding as JPG
+  \checkeditem Encoding as PNG
+  \checkeditem Image gallery website pieces
+  \item Integrating with Apache
+  \item Integrating with Headless Webkit
+  \item Unit testing of framing
+  \item Unit testing of reassembly
+  \checkeditem Unit testing of headers
+  \checkeditem Unit testing of sequencing
+  \checkeditem Unit testing of encoding schemes
+  \item End-to-end testing with regular browser with packet capture
+  \item End-to-end testing with Tor
+  \item Performance testing design
+  \item Performance testing
+\end{checklist}
+
+How the framing is going to work is being discussed and overall decisions have been made. There are some subtleties that need to be worked out prior to integration.
+
+Connection establishment needs to be finalized. There is discussion of details related to authentication and keeping track of multiple connections ongoing, but nearly finalized. Actual integration on the client-side and server-side needs to be done as well.
+
+Since additional encoding schemes can be added easily by writing a new encoder, further schemes are being considered. SVG in particular is being looked at as something that could be added.
+
+Overall tests need to be created as well as performed. This will provide performance information, to characterize the overhead introduced by this layer within the stack.
