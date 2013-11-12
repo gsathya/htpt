@@ -139,12 +139,11 @@ class Encoder:
     'more_data' and a boolean value (0/1) which sets the more_data bit
     (MSB) in the header. Example syntax: generateFlags(more_data=1)"""
 
+    flags = '0000'
     if 'more_data' in kwargs:
       more_data = kwargs['more_data']
-      if more_data:
+      if more_data==1:
         flags = '1000'
-    else:
-      flags = '0000'
     return flags
 
   def generateNonce(self):
