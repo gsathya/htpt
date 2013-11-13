@@ -115,5 +115,5 @@ class Buffer:
         self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
         self.buffer.append(None)
       # keep sending recvData until it finishes
-      # TODO what about the seqNum - keep it the same?
-      self.recvData(availableData, seqNum)
+      # This flushes availableData
+      self.callback(availableData)
