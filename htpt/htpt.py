@@ -32,7 +32,7 @@ def run_client():
     # if we have received data from the Internet, then send it
     if (data = conns[0].recv()) != None:
       conns[0].timeout = datetime.now()
-      decoded = urlEncode.decode(data)
+      decoded = imageEncode.decode(data)
       conns[0].receiveData(decoded)
     # if we go have not received or send data for 10 min, break out
     if (datetime.now() - conns[0].timeout).total_seconds() > 60*10:
@@ -91,7 +91,7 @@ def run_server():
         # put the headers on the data (not the actual function name)
         framed = conn.frameData(data)
         # encode the data
-        encoded = urlEncode.encode(framed, 'market')
+        encoded = imageEncode.encode(framed)
         # send the data with apache
         conn.send(encoded)
       # if we go have not received or sent data for 10 min, break out
