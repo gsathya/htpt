@@ -27,6 +27,12 @@ class Buffer:
     self.callback = callback
 
   def addData(self, data):
+    # TODO: this function does not make sense anymore as buffer is a list
+    # of lendth buffer size. Buffers are only used for reassembly, data sender
+    # doesn't need access. Sending decisions will be made in the main file
+    # now which will call take tor stream, assemble() it with appropriate
+    # headers and encode() it, before flush() to internet.
+
     # we can't add all the data, there's not enough space
     if len(self.buffer) + len(data) > BUFFER_SIZE:
       # compute remaining space
@@ -86,7 +92,7 @@ class Buffer:
     receive packets and then flush it above."""
 
     if not self.isSeqNumInBuffer(seqNum):
-      raise BufferingException("Sequence number already received/Not enough space in the buffer")
+      raise BufferingException("seqNum already received/Not enough space in the buffer")
     index = (seqNum - self.minAcceptableSeqNum) % MAX_SEQ_NUM
     self.buffer[index] = data
     #see if we have enough data to pass up by coalescing all of the
@@ -103,7 +109,7 @@ class Buffer:
     if dataToSend > MIN_SIZE_TO_PASS_UP:
       availableData = ''
       #coalesce every data element up to the first missing sequence
-      while self.buffer[0] != None:
+      while self.buffer[0] is not None:
         availableData += self.buffer.pop(0)
         self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
         self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
