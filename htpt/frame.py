@@ -170,8 +170,10 @@ class Disassemble:
     self.sessionID = self.setSessionID(headerTuple[1])
     mask = int('0b1111',2)
     self.flags = bin((headerTuple[2] & (mask << 4)) >> 4)[2:]
-    # TODO: At main: if flags = '1000' i.e. more_data, then send pull_request to
+    # TODO: Interpret the flag string
+    # At main: if flags = '1000' i.e. more_data, then send pull_request to
     # server for more data
+    # At main: if SYN flag is set then set/get session ID
     self.nonce = headerTuple[2] & mask
 
   def getSessionID(self):
