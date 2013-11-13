@@ -29,6 +29,22 @@ class SeqNumber():
     self._lock.release()
     return self.seqNum
 
+class SessionID():
+  """Class to generate a new session ID when a new client connects to the server"""
+  def __init__(self, sessionID=0):
+    """Initialize the new session ID"""
+    self.sessionID = sessionID
+    self.initialized = True
+    self._lock = threading.Lock()
+
+  def getSessionIDAndIncrement(self):
+    """In a thread safe manner, get the session ID
+
+    this function is called only when a new client connects"""
+    self._lock.acquire()
+    self.sessionID = ((self.sessionID + 1) % MAX_SESSION_NUM)
+    self._lock.release()
+    return self.sessionID
 
 class Assemble():
   """Class to Assemble a data frame with headers before sending to encoder"""
