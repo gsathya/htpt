@@ -8,6 +8,7 @@ import struct
 from random import randint
 
 import urlEncode
+import buffers
 from constants import *
 
 
@@ -164,6 +165,7 @@ class Assemble():
 class Disassemble:
   def __init__(self):
     self.output = None
+    self.buffer = Buffer()
 
   def disassemble(self, packet):
     """Decode, then Unassemble received frame to headers and data
@@ -183,6 +185,7 @@ class Disassemble:
 
     data = frame[4:]
     self.output = data
+
     self.flush()
 
   def retrieveHeaders(self, headers):
