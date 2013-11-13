@@ -7,131 +7,99 @@ import unittest
 from htpt import constants
 from htpt import frame
 
-class TestFrame(unittest.TestCase):
-  """Test the validity of the framing module in htpt"""
-
-  def setUp(self):
-    self.callback= self.recvData
-    self.frame = frame.Framer(self.callback)
-    self.uploadedData = ''
-
-  def recvData(self, data):
-    """Dummy callback function to test the framing modules ability to
-    send data up"""
-    self.uploadedData = data
+class TestSeqNum(unittest.TestCase):
+  """Test sequence number module and lock"""
 
   def test_init(self):
-    """Ensure that the init method works correctly on the SeqNumber
-    object by initializing the sequence number to the correct value"""
-    
     aNum = 10
-    frame.SeqNumber._seqNum = aNum +500
-    frame.init(aNum)
-    self.assertEqual(aNum, frame.SeqNumber._seqNum)
-    self.assertTrue(frame.SeqNumber._initialized)
+    self.SN = frame.SeqNumber(aNum)
+    self.SN.seqNum += 500
+    self.assertEqual(aNum, SN.seqNum)
+    self.assertTrue(SN._initialized)
 
   def test_getSequenceAndIncrement(self):
     """Ensure that sequence numbers are handed out properly and that
     wrapping occurs correctly"""
 
     #ensure that we get the next sequence number
-    frame.init(5)
-    self.assertEqual(6, frame.getSequenceAndIncrement())
+    self.SN = frame.SeqNumber(5)
+    self.assertEqual(6, SN.getSequenceAndIncrement())
     #ensure that we do wrapping
-    frame.init(65534)
-    self.assertEqual(0, frame.getSequenceAndIncrement())
+    self.SN = frame.SeqNumber(65534)
+    self.assertEqual(0, SN.getSequenceAndIncrement())
 
-  def test_FramerConstructor(self):
-    """Verify that the constructor correctly establishes the buffers
-    and constants to receive data"""
 
-    self.frame = frame.Framer(self.callback)
-    #check that the buffer exists and is the correct length
-    self.assertIsNotNone(self.frame.buffer)
-    self.assertEqual(constants.BUFFER_SIZE, len(self.frame.buffer))
+class TestSessionID(unittest.TestCase):
+  """Test sessionID module and lock"""
 
-    #check that the min and max seq numbers were set up correctly
-    self.assertEqual(self.frame.minAcceptableSeqNum, 0)
-    self.assertEqual(self.frame.maxAcceptableSeqNum, constants.BUFFER_SIZE)
-    self.frame = frame.Framer(self.callback, minSeqNum = 50)
-    self.assertEqual(self.frame.minAcceptableSeqNum, 50)
-    self.assertEqual(self.frame.maxAcceptableSeqNum, constants.BUFFER_SIZE + 50)
+  def test_init(self):
+    aID = 10
+    self.SI = frame.SessionID(aID)
+    self.SI.sessionID += 500
+    self.assertEqual(aID, SI.sessionID)
+    self.assertTrue(SI._initialized)
 
-    #check that the callback is setup correctly
-    self.assertEqual(self.frame.recvData, self.callback)
+  def test_getSessionIDAndIncrement(self):
+    """Ensure that session ID are handed out properly and that
+    wrapping occurs correctly"""
 
-  def test_isSeqNumInBuffer(self):
-    """Test whether this function correctly identifies when sequence
-    numbers are in or out of the scope of the buffer"""
+    #ensure that we get the next session ID on new client
+    self.SI = frame.SessionID(5)
+    self.assertEqual(6, SI.getSessionIDAndIncrement())
+    #ensure that we do wrapping
+    self.SI = frame.SessionID(255)
+    self.assertEqual(0, SI.getSessionIDAndIncrement())
 
-    #test 1-> no wrapping min < num < max
-    self.frame.minAcceptableSeqNum = 1
-    self.frame.maxAcceptableSeqNum = 10
-    seqNum = 5
-    self.assertEqual(True, self.frame.isSeqNumInBuffer(seqNum))
-    #test 2-> wrap max, max < min < num
-    self.frame.minAcceptableSeqNum = 65000
-    self.frame.maxAcceptableSeqNum = 1
-    seqNum = 65005
-    self.assertEqual(True, self.frame.isSeqNumInBuffer(seqNum))
-    #test 3-> wrap max and num, num < max < min
-    self.frame.minAcceptableSeqNum = 65000
-    self.frame.maxAcceptableSeqNum = 20
-    seqNum = 3
-    self.assertEqual(True, self.frame.isSeqNumInBuffer(seqNum))
-    #test 4-> too low-> num < min < max
-    self.frame.minAcceptableSeqNum = 60000
-    self.frame.maxAcceptableSeqNum = 60002
-    seqNum = 3
-    self.assertEqual(False, self.frame.isSeqNumInBuffer(seqNum))
-    #test 5-> too high-> min < max < num
-    self.frame.minAcceptableSeqNum = 60000
-    self.frame.maxAcceptableSeqNum = 65002
-    seqNum = 65005
-    self.assertEqual(False, self.frame.isSeqNumInBuffer(seqNum))
-    #test 6-> bad seq num-> max < min < num, where num > max_seq_num
-    self.frame.minAcceptableSeqNum = 65000
-    self.frame.maxAcceptableSeqNum = 5
-    seqNum = 68000
-    self.assertEqual(False, self.frame.isSeqNumInBuffer(seqNum))
 
-  def test_recvFrame(self):
-    """Test that frames are correctly added to the buffer"""
-    
-    #initialize our window from 0-> constants.BUFFER_SIZE and set the size
-    #to pass up to 10 characters
-    self.framer = frame.Framer(self.callback, minSeqNum=0)
-    frame.MIN_SIZE_TO_PASS_UP = 10
+class TestAssemble(unittest.TestCase):
+  """Test the validity of the Assemble framing module in htpt"""
+
+  def setUp(self):
+    self.callback= self.flush
     self.uploadedData = ''
-    #start by testing that out of order packets are queued correctly
-    self.framer.recvFrame('hello', 0)
-    self.framer.recvFrame(' wordy', 2)
-    self.framer.recvFrame(' adverb', 3)
-    self.framer.recvFrame(' otherwise', 4)
-    #verify that nothing has been sent up yet
-    self.assertEqual(self.uploadedData, '')
-    #and verify that everything gets delivered in order
-    self.framer.recvFrame(' stuffy', 1)
-    self.assertEqual(self.uploadedData, 'hello stuffy wordy adverb otherwise')
-    
-    #verify that data gets sent as soon as the min size to pass up is hit
-    self.uploadedData = ''
-    self.framer = frame.Framer(self.callback, minSeqNum = 0)
-    frame.MIN_SIZE_TO_PASS_UP = 10
-    self.framer.recvFrame('hello', 0)
-    self.framer.recvFrame(' working', 1)
-    self.assertEqual(self.uploadedData, 'hello working')
 
-    #verify that frames out of the window get dropped
-    self.uploadedData = ''
-    self.assertRaises(frame.FramingException, self.framer.recvFrame,'something', 50000)
-    self.assertNotIn('something', self.framer.buffer)
+  def flush(self, data):
+    """Dummy callback function to test the framing modules ability to
+    send data up"""
+    print "flush data up"
+    self.uploadedData = data
 
-  def test_flushBuffer(self):
-    """Verify that we can correctly flush the buffer"""
-    
-    self.uploadedData = ''
-    self.framer = frame.Framer(self.callback, minSeqNum = 0)
-    self.framer.recvFrame('hello', 0)
-    self.framer.flushBuffer()
-    self.assertEqual(self.uploadedData, 'hello')
+  def test_init(self):
+    """Ensure that the init method works correctly on the SeqNumber
+    object by initializing the sequence number to the correct value"""
+
+    # check initialization with default session ID
+    self.Assembler = frame.Assemble()
+    self.assertEqual(self.Assembler.seqNum, 0)
+    self.assertEqual(self.Assembler.sessionID, 0)
+
+  def test_sessionID(self):
+    """Test arbit session ID and set/get"""
+    aID = 10
+    self.Assembler.setSessionID(aID)
+    self.assertEqual(aID, Assembler.getSessionID())
+
+  def test_generateFlags(self):
+    # default case no flags
+    self.flags = self.Assembler.generateFlags()
+    self.assertEqual(self.flags, '0000')
+    # only more_data flag
+    self.flags = self.Assembler.generateFlags(more_data=1)
+    self.assertEqual(self.flags, '1000')
+    # only SYN flag
+    self.flags = self.Assembler.generateFlags(SYN=1)
+    self.assertEqual(self.flags, '0100')
+    # more_data and SYN flag
+    self.flags = self.Assembler.generateFlags(more_data=1, SYN=1)
+    self.assertEqual(self.flags, '1100')
+    # some random flag should still be like default case
+    self.flags = self.Assembler.generateFlags(no_fucks_to_give=1)
+    self.assertEqual(self.flags, '0000', "flags break with arbit data")
+
+  def test_generateNonce(self):
+    self.nonce = self.Assembler.generateNonce()
+    self.assertLessEqual(self.nonce, 15, "nonce out of range")
+    self.assertGreaterEqual(self.nonce, 0, "nonce out of range")
+
+if __name__ == "__main__":
+  unittest.main()
