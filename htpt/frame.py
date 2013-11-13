@@ -8,7 +8,7 @@ import struct
 from random import randint
 
 import urlEncode
-import buffers
+from buffers import Buffer
 from constants import *
 
 
@@ -31,56 +31,8 @@ class SeqNumber():
     return self.seqNum
 
 
-class Framer():
-  """Class to reassemble the Tor stream"""
-
-  def __init__(self, callback, **kArgs):
-    """Initialize the class to frame all of the packages
-
-    Parameters: callback- a function which the received data will be
-    passed to once it is in the correct order
-    kArgs- additional keyword arguments specified for the
-    function. Currently, the only additional option has the keyword of
-    'minSeqNum' and an integer value which tells Framer the min
-    acceptable sequence number. Example syntax: Framer(callback,
-    minSeqNum=5)
-
-    """
-
-    self.buffer = [None] * BUFFER_SIZE
-    if 'minSeqNum' in kArgs:
-      self.minAcceptableSeqNum = kArgs['minSeqNum']
-      self.maxAcceptableSeqNum = BUFFER_SIZE + self.minAcceptableSeqNum
-    else:
-      self.minAcceptableSeqNum = 0
-      self.maxAcceptableSeqNum = BUFFER_SIZE
-    #setup a function to call when there is data to receive
-    self.recvData = callback
-
-  def isSeqNumInBuffer(self, seqNum):
-    """If the sequence number is in the buffer, return True, else False"""
-    if seqNum >= self.minAcceptableSeqNum:
-      if seqNum <= self.maxAcceptableSeqNum:
-        return True
-      #explore the case where the sequence number wraps
-      elif (self.minAcceptableSeqNum + BUFFER_SIZE) >= MAX_SEQ_NUM:
-        #case where maxSeqNum wrapped, so seqNum > min > max
-        if(seqNum <= MAX_SEQ_NUM):
-          return True
-      else:
-        return False
-    else:
-      #case where the max seq num and seqNum have wrapped, but min has
-      #not
-      if(self.minAcceptableSeqNum + BUFFER_SIZE) > MAX_SEQ_NUM:
-        if(seqNum < self.maxAcceptableSeqNum):
-          return True
-      else:
-        return False
-    return False
-
-
 class Assemble():
+  """Class to Assemble a data frame with headers before sending to encoder"""
   def __init__(self):
     """Initialize SeqNumber object"""
     self.seqNum = SeqNumber()
@@ -143,7 +95,9 @@ class Assemble():
     return headerString
 
   def flush(self):
-    # TODO: send self.output to the interwebz
+    # This function may not be needed. In main() we call
+    # assembler.assemble(data, flags) and then
+    # urlEncode.encode(assembler.output), and then flush() to interwebz
     print self.output
     self.output = None
 
@@ -156,37 +110,38 @@ class Assemble():
 
     headers = self.getHeaders(**kwargs)
     frame = headers+data
-    # encode frame to packet and send output packet to flush()
-    self.output = urlEncode.encode(headers+data, 'market')
-    # when unassembling: decoded data = headers+data[4:]
-    self.flush()
+    self.output = frame
+    # TODO in main(): encode self.output to a packet and send output packet to flush()
 
 
 class Disassemble:
+  """Class to Disassemble a decoded packet into headers+data before sending to buffers"""
   def __init__(self):
     self.output = None
     self.buffer = Buffer()
+    # TODO CHECK if flush() should be added here as a callback to buffer
+    self.buffer.addCallback(self.flush)
 
-  def disassemble(self, packet):
-    """Decode, then Unassemble received frame to headers and data
+  def disassemble(self, frame):
+    """Unassemble received (decoded)frame to headers and data
 
-    Parameters: frame is the encoded url or cookie. It should first
-    be decoded by urlEncode.decode(), which will return bytes to be
-    unassembled.
+    Parameters: frame is the raw bytes after decoding url or cookie
     headers are the first 4 bytes, data is what follows.
+
+    should be called from main() after urlEncode.decode(). raw data,
+    seqNum are then sent to Buffer.recvData() to flush it.
 
     we assume data is simply a string"""
 
-    # first decode received frame
-    frame = urlEncode.decode(packet)
-    # then split to headers + data
+    # split to headers + data
     headers = frame[:4]
     self.retrieveHeaders(headers)
 
     data = frame[4:]
     self.output = data
 
-    self.flush()
+    # receive, reorder and flush at buffer
+    self.buffer.recvData(data, self.seqNum)
 
   def retrieveHeaders(self, headers):
     """Extract 4 byte header to seqNum, sessionID, Flags, Nonce"""
