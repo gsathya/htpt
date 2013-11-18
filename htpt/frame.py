@@ -96,8 +96,8 @@ class Assemble():
 
   def getSeqNum(self):
     """Get sequence number after incrementing"""
-    seqNum = self.seqNum.getSequenceAndIncrement()
-    return seqNum
+    sequenceNumber = self.seqNum.getSequenceAndIncrement()
+    return sequenceNumber
 
   def getHeaders(self, **kwargs):
     """Create a 4 byte struct header in network byte order
@@ -115,13 +115,13 @@ class Assemble():
 
     """
 
-    self.seqNum = self.getSeqNum()
+    self.sequenceNumber = self.getSeqNum()
     self.sessionID = self.getSessionID()
     self.flags = self.generateFlags(**kwargs)
     self.nonce = self.generateNonce()
 
     flags_and_nonce = (int(self.flags,2) << 4) | self.nonce
-    headerString = struct.pack('!HBB', self.seqNum, self.sessionID, flags_and_nonce)
+    headerString = struct.pack('!HBB', self.sequenceNumber, self.sessionID, flags_and_nonce)
 
     return headerString
 
@@ -183,9 +183,10 @@ class Disassemble:
     headerTuple = struct.unpack('!HBB', headers)
     self.seqNum = headerTuple[0]
     # TODO: At main, call getSessionID()
-    self.sessionID = self.setSessionID(headerTuple[1])
+    self.setSessionID(headerTuple[1])
     mask = int('0b1111',2)
-    self.flags = bin((headerTuple[2] & (mask << 4)) >> 4)[2:]
+    #extra_bitshift = 1 << 8
+    self.flags = bin((headerTuple[2] & (mask << 4)) | (1<<8)) [3:7]
     # TODO: Interpret the flag string
     # At main: if flags = '1000' i.e. more_data, then send pull_request to
     # server for more data
