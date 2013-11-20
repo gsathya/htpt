@@ -26,34 +26,18 @@ class Buffer:
   def addCallback(self, callback):
     self.callback = callback
 
-  def addData(self, data):
-    # TODO: this function does not make sense anymore as buffer is a list
-    # of lendth buffer size. Buffers are only used for reassembly, data sender
-    # doesn't need access. Sending decisions will be made in the main file
-    # now which will call take tor stream, assemble() it with appropriate
-    # headers and encode() it, before flush() to internet.
-
-    # we can't add all the data, there's not enough space
-    if len(self.buffer) + len(data) > BUFFER_SIZE:
-      # compute remaining space
-      buffer_space_rem = BUFFER_SIZE - len(self.buffer)
-      self.buffer.append(data[:buffer_space_rem])
-      data = data[buffer_space_rem:]
-
-      # set flags to pass to encode function
-      # currently we have only one flag to denote more data
-      # kwargs = {'more_data':1}
-      # flush the buffer
-      self.flushBuffer(more_data=1)
-
-      # repeat till we have no data
-      self.addData(data)
-    else:
-      self.buffer.append(data)
-
-  def flushBuffer(self, **kwargs):
-    self.callback(self.buffer, **kwargs)
-    self.buffer = []
+  def flush(self, **kwargs):
+    availableData = ''
+    while self.buffer[0] is not None:
+      availableData += self.buffer.pop(0)
+      self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
+      self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
+      self.buffer.append(None)
+      # keep sending recvData until it finishes
+      # This flushes availableData
+    if availableData != '':
+      self.callback(availableData)
+    return
 
   def isSeqNumInBuffer(self, seqNum):
     """If the sequence number is in the buffer, return True, else False"""
@@ -95,25 +79,15 @@ class Buffer:
       raise BufferingException("seqNum already received/Not enough space in the buffer")
     index = (seqNum - self.minAcceptableSeqNum) % MAX_SEQ_NUM
     self.buffer[index] = data
-    #see if we have enough data to pass up by coalescing all of the
-    #frames and seeing if we meet the min threshold to send up
-    dataToSend = 0
-    for index in range(BUFFER_SIZE):
-      if self.buffer[index] is None:
-        #we have found all sendable data
-        break
-      else:
-        dataToSend = dataToSend + len(self.buffer[index])
-    #if we have enough data to send up, pass it to the callback
-    #function
-    if dataToSend > MIN_SIZE_TO_PASS_UP:
-      availableData = ''
-      #coalesce every data element up to the first missing sequence
-      while self.buffer[0] is not None:
-        availableData += self.buffer.pop(0)
-        self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
-        self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
-        self.buffer.append(None)
+    #coalesce every data element up to the first missing sequence
+    availableData = ''
+    while self.buffer[0] is not None:
+      availableData += self.buffer.pop(0)
+      self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
+      self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
+      self.buffer.append(None)
       # keep sending recvData until it finishes
       # This flushes availableData
+    if availableData != '':
       self.callback(availableData)
+    return
