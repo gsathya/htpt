@@ -5,7 +5,7 @@
 
 import threading
 import struct
-from random import randint
+#from random import randint
 
 from buffers import Buffer
 from constants import *
@@ -51,7 +51,6 @@ class Assemble():
   def __init__(self, sessionID=0):
     """Initialize SeqNumber object and sessionID"""
     self.seqNum = SeqNumber()
-    self.output = None
     self.setSessionID(sessionID)
 
   def setSessionID(self, sessionID):
@@ -76,9 +75,9 @@ class Assemble():
     set appropriate bits in flags.
     Example syntax: generateFlags(more_data=1, SYN=0)
 
-    flags format: [ more_data | SYN | X | X ]"""
+    flags format: [ more_data | SYN | X | X | X | X | X | X ]"""
 
-    flags = '0000'
+    flags = '00000000'
     flag_list = list(flags)
     if 'more_data' in kwargs:
       more_data = kwargs['more_data']
@@ -87,12 +86,7 @@ class Assemble():
       SYN_flag = kwargs['SYN']
       flag_list[1]=str(SYN_flag)
     flags = "".join(flag_list)
-    return flags
-
-  def generateNonce(self):
-    """Generate a random integer value between 0 and 16"""
-    nonce = randint(0,15)
-    return nonce
+    return int(flags, 2)
 
   def getSeqNum(self):
     """Get sequence number after incrementing"""
@@ -102,14 +96,13 @@ class Assemble():
   def getHeaders(self, **kwargs):
     """Create a 4 byte struct header in network byte order
 
-    16-bit sequence num | 8-bit session ID | 4-bit flag | 4-bit nonce
+    16-bit sequence num | 8-bit session ID | 8-bit flag
     unsigned short (H) | unsigned char (B) | unsigned char (B) packed
 
     Calls functions to get:
     seqNum- 2 byte sequence number of the frame
     sessionID - 1 byte char int assigned by server
-    flags - 4 bit string. check kwargs and set appropriate bit
-    nonce - integer. randomized value [0,15]
+    flags - 8 bit int. check kwargs and set appropriate bit
 
     returns: header string (struct) packedused in assemble function
 
@@ -118,19 +111,10 @@ class Assemble():
     self.sequenceNumber = self.getSeqNum()
     self.sessionID = self.getSessionID()
     self.flags = self.generateFlags(**kwargs)
-    self.nonce = self.generateNonce()
 
-    flags_and_nonce = (int(self.flags,2) << 4) | self.nonce
-    headerString = struct.pack('!HBB', self.sequenceNumber, self.sessionID, flags_and_nonce)
+    headerString = struct.pack('!HBB', self.sequenceNumber, self.sessionID, self.flags)
 
     return headerString
-
-  def flush(self):
-    # This function may not be needed. In main() we call
-    # assembler.assemble(data, flags) and then
-    # urlEncode.encode(assembler.output), and then flush() to interwebz
-    print self.output
-    self.output = None
 
   def assemble(self, data, **kwargs):
     """Assemble frame as headers + data
@@ -141,18 +125,34 @@ class Assemble():
 
     headers = self.getHeaders(**kwargs)
     frame = headers+data
-    self.output = frame
-    # TODO in main(): encode self.output to a packet and send output packet to flush()
+    return frame
 
 
 class Disassemble:
   """Class to Disassemble a decoded packet into headers+data before sending to buffers"""
-  def __init__(self):
-    self.output = None
+  def __init__(self, callback):
+    self.callback = callback
     # allocate a buffer to receive data and flush it
     self.buffer = Buffer()
-    # TODO CHECK if flush() should be added here as a callback to buffer
-    self.buffer.addCallback(self.flush)
+
+    self.buffer.addCallback(self.callback)
+
+  def initServerConnection(self, frame):
+    """getting password from url; returns data"""
+    #get the data
+    headers = frame[:4]
+    self.retrieveHeaders(headers)
+    data = frame[4:]
+
+    #initialize the session id
+    #this should be done at higher layer using
+    #Assembler.setSessionID(sessionID.getSessionIDAndIncrement())
+    #should be done at the server only if client is new and SYN=1
+
+    #set the seqnumber to the value from the frame -- Ben
+    #no need to do this as seq num start from 0 and increment
+
+    return data
 
   def disassemble(self, frame):
     """
@@ -172,26 +172,29 @@ class Disassemble:
     self.retrieveHeaders(headers)
 
     data = frame[4:]
-    self.output = data
 
     # receive, reorder and flush at buffer
     self.buffer.recvData(data, self.seqNum)
+    return data
 
   def retrieveHeaders(self, headers):
-    """Extract 4 byte header to seqNum, sessionID, Flags, Nonce"""
+    """Extract 4 byte header to seqNum, sessionID, Flags"""
 
     headerTuple = struct.unpack('!HBB', headers)
     self.seqNum = headerTuple[0]
-    # TODO: At main, call getSessionID()
+
+    # retrieve flags
+    self.flags = headerTuple[2]
+
+    # retrieved header sets the session ID if SYN flag is set
+    # also add a check: if SYN flag not checked then
+    # self.sessionid == headerTuple[1]
+
+    #if self.flags & (1<<7):
     self.setSessionID(headerTuple[1])
-    mask = int('0b1111',2)
-    #extra_bitshift = 1 << 8
-    self.flags = bin((headerTuple[2] & (mask << 4)) | (1<<8)) [3:7]
-    # TODO: Interpret the flag string
-    # At main: if flags = '1000' i.e. more_data, then send pull_request to
+
+    # Future: if flags = '1000' i.e. more_data, then send pull_request to
     # server for more data
-    # At main: if SYN flag is set then set/get session ID
-    self.nonce = headerTuple[2] & mask
 
   def getSessionID(self):
     """Return session ID to upper abstraction"""
@@ -201,7 +204,5 @@ class Disassemble:
     """Set sessionID at client or server"""
     self.sessionID = sessionID
 
-  def flush(self):
-    # send self.output to Tor
-    print self.output
-    self.output = None
+  #def flush(self):
+  #  self.buffer.flush()
