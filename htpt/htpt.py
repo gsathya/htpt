@@ -129,87 +129,6 @@ class HTPT():
     self.torSock.send(data)
     return
 
-  def serverProcessRequest(self):
-    """
-    Code which basically runs the server
-
-    Parameters:
-    request- the headers for the interaction the client just made with Apache
-    ipAddress- the IP address for the host
-
-    Structure: the wsgi code is pretty dumb, so it will call this
-    function every time it receives something. This function will 1)
-    determine whether this is HTPT or image gallery traffic 2) route
-    gallery traffic to the appropriate location and 3) receive and
-    respond to the htpt traffic
-
-    """
-    ipAddress = request.remote_addr
-    # if we are not in the address list, then this is not an initialized connection
-    if ipAddress not in self.addressList:
-      # if the address is not in the list and it is not a market
-      # request, then it is web gallery traffic
-      if not isMarket(request):
-        sendToImageGallery(request)
-        return
-      # if this is a market request, then proceed with new session initialization
-      else:
-        decoded = urlEncode.decode(request.url)
-        password = self.disassembler.initServerConnection(decoded)
-        # if they successfully authenticate, continue
-        if password == TOR_BRIDGE_PASSWORD:
-          self.addressList.append(ipAddress)
-          self.conn = self.dissassembler(self.disassember.getSeqNum())
-          sessionID = self.sessionIDs.getSessionIDAndIncrement()
-          self.conn.setSessionID(sessionID)
-          #send back a blank image with the new session id
-          self.assembler.setSessionID(sessionID)
-          image = imageEncode.encode('', 'png')
-          sendToApache(image)
-          #TODO
-          #set the session id to the next value
-          #setup some way to maintain a single Internet connection per client
-    # if this is an initialized client, then receive the data and see
-    # if we have anything to send
-    else:
-      decoded = urlEncode.decode([request.url, request.cookies])
-      sendToApache(self.buffer.pop())
-
-  def run_server():
-    """
-    run a server for htpt
-
-    Structure: this method basically just receives data back from the
-    Internet and forwards the traffic onto the client
-    
-    """
-    #TODO-> finish implementing this code after we come up with new abstraction
-    # initialize the connection
-    self.sessionIDs = SessionID()
-    self.assembler = frame.Assemble()
-    self.receivedData = False
-    # bind to a local address and wait for Tor to connect
-    self.torBinder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    self.torBinder.bind(('localhost', LISTEN_PORT))
-    self.torBinder.listen(1)
-    (self.torSock, address) = self.torBinder.accept()
-    self.torSock.setblocking(0)
-
-    while 1:
-      # wait for data to send from Tor. Wait at most
-      readyToRead, readyToWrite, inError = \
-          select.select(self.torSock, None, None, TIMEOUT)
-      # if we have received data from the Tor network for the Tor
-      # client, then send it
-      if readyToRead != None:
-        dataToSend = readyToRead.recv()
-        # put the headers on the data (not the actual function name)
-        framed = self.assembler.assemble(dataToSend)
-        # encode the data
-        encoded = imageEncode.encode(framed, 'png')
-        # send the data with apache
-        self.buffer.append(encoded)
-
 @app.route('/')
 def processRequest():
   """Process incoming requests from Apache
@@ -284,4 +203,3 @@ if __name__ == '__main__':
     htptObject.torBinder.listen(1)
     (htptObject.torSock, address) = htptObject.torBinder.accept()
     app.run()
-    
