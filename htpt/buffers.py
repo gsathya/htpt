@@ -3,7 +3,6 @@ from constants import *
 class BufferingException(Exception):
   pass
 
-
 class Buffer:
   """Stores data, buffers it and sends it to the Framer"""
   def __init__(self, **kArgs):
@@ -31,7 +30,7 @@ class Buffer:
     while self.buffer[0] is not None:
       availableData += self.buffer.pop(0)
       self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
-      self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
+      self.maxAcceptableSeqNum = ((self.maxAcceptableSeqNum +1) % BUFFER_SIZE)
       self.buffer.append(None)
       # keep sending recvData until it finishes
       # This flushes availableData
@@ -76,7 +75,7 @@ class Buffer:
     receive packets and then flush it above."""
 
     if not self.isSeqNumInBuffer(seqNum):
-      raise BufferingException("seqNum already received/Not enough space in the buffer")
+      raise BufferingException("seqNum already received/Not enough space in the buffer {} ".format(seqNum))
     index = (seqNum - self.minAcceptableSeqNum) % MAX_SEQ_NUM
     self.buffer[index] = data
     #coalesce every data element up to the first missing sequence
@@ -84,7 +83,7 @@ class Buffer:
     while self.buffer[0] is not None:
       availableData += self.buffer.pop(0)
       self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
-      self.maxAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
+      self.maxAcceptableSeqNum = ((self.maxAcceptableSeqNum +1) % BUFFER_SIZE)
       self.buffer.append(None)
       # keep sending recvData until it finishes
       # This flushes availableData

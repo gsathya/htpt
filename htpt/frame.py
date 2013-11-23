@@ -107,7 +107,6 @@ class Assemble():
     returns: header string (struct) packedused in assemble function
 
     """
-
     self.sequenceNumber = self.getSeqNum()
     self.sessionID = self.getSessionID()
     self.flags = self.generateFlags(**kwargs)

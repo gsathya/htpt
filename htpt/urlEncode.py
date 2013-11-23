@@ -180,17 +180,19 @@ def encodeAsMarket(data):
   if len(dataLen) == 1:
     dataLen = '0' + dataLen
   urlData = dataLen + hexData + padding
-  domain = pickDomain()
+#  domain = pickDomain()
+#  domain = "localhost"
   #Note: we cannot use urlparse here because it capitalizes our hex
   #values and we are using uppercase to distinguish padding and
   #actual text
-  url = 'http://' + 'click.' + domain + '?qs=' + urlData
+#  url = 'http://' + 'click.' + domain + '?qs=' + urlData
+  url = 'http://' + "localhost:5000/" + '?qs=' + urlData
   encodedData = {'url':url, 'cookie':cookies}
   return encodedData
 
 def isMarket(url):
   """Return true if this url matches the market pattern"""
-  pattern = 'http://click[a-zA-Z0-9.]*[.]com*\?qs=[0-9a-fA-F]{80}'
+  pattern = 'http://[a-zA-Z0-9:./]*\?qs=[0-9a-fA-F]{80}'
   matches = re.match(pattern, url)
   if matches != None:
       return True
@@ -343,7 +345,7 @@ def decodeAsMarket(url):
   Returns: a string with the decoded data
 
   """
-  pattern = 'click.*\?qs=(?P<hash>[0-9a-fA-F]*)'
+  pattern = '\?qs=(?P<hash>[0-9a-fA-F]*)'
   matches = re.search(pattern, url)
   data = matches.group('hash')
   # strip any padding
