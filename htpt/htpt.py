@@ -26,7 +26,9 @@ import imageEncode
 #Constants
 CLIENT_LISTEN_PORT=8000 #local port to communicate to Tor with
 SERVER_LISTEN_PORT=8001
-TIMEOUT = 0.1 #max number of seconds between calls to read from the server
+TIMEOUT = 1
+#TODO put this back to 0.1
+#TIMEOUT = 0.1 #max number of seconds between calls to read from the server
 
 #Constants just to make this work-> remove
 #TODO
@@ -54,7 +56,7 @@ class HTPT():
 
     #now that we have a Tor connection, start sending data to server
     self.bridgeConnect(TOR_BRIDGE_ADDRESS, TOR_BRIDGE_PASSWORD)
-
+    self.assembler.seqNum = frame.SeqNumber(-1)
     self.timeout = datetime.now()
 
     while 1:
@@ -63,9 +65,12 @@ class HTPT():
           select.select([self.torSock], [], [], TIMEOUT)
       if readyToRead != []:
         dataToSend = readyToRead[0].recv(1024*1000)
-        for index in range(35, len(dataToSend)-1, 35):
-          segment = dataToSend[:index]
-          dataToSend = dataToSend[index:]
+        print "Client Sending: {}".format(dataToSend)
+        # if there is less than 35 bytes of data to send, then make
+        # sure that we still send it
+        while dataToSend != '':
+          segment = dataToSend[:35]
+          dataToSend = dataToSend[35:]
           # put the headers on the data (not the actual function name)
           framed = self.assembler.assemble(segment)
           # encode the data
@@ -176,6 +181,7 @@ def processRequest():
           sessionID = htptObject.sessionIDs.getSessionIDAndIncrement()
           htptObject.assembler.setSessionID(sessionID)
           htptObject.disassembler.setSessionID(sessionID)
+          #we initialize it to start sending with seq number 1
           htptObject.assembler.seqNum = frame.SeqNumber(-1)
           #send back a blank image with the new session id
           framed = htptObject.assembler.assemble('')
@@ -183,6 +189,8 @@ def processRequest():
           return serveImage(image)
           #TODO
           #setup some way to maintain a single Internet connection per client
+        else:
+          print "Bad password entered"
     # if this is an initialized client, then receive the data and see
     # if we have anything to send
   else:
@@ -197,6 +205,7 @@ def processRequest():
     if readyToRead != []:
       # get up to a megabyte
       dataToSend = readyToRead[0].recv(1024*1000)
+      print "Server Sending: {}".format(dataToSend)
     else:
       dataToSend = ''
     # put the headers on the data (not the actual function name)
