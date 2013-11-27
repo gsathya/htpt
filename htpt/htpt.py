@@ -26,9 +26,7 @@ import imageEncode
 #Constants
 CLIENT_LISTEN_PORT=8000 #local port to communicate to Tor with
 SERVER_LISTEN_PORT=8001
-TIMEOUT = 1
-#TODO put this back to 0.1
-#TIMEOUT = 0.1 #max number of seconds between calls to read from the server
+TIMEOUT = 0.1 #max number of seconds between calls to read from the server
 
 #Constants just to make this work-> remove
 #TODO
