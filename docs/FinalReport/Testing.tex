@@ -1,0 +1,23 @@
+\section{Testing}
+
+Testing is an ongoing process. During development unit tests are used, and after development, performance tests are used. 
+
+\subsection{Unit Tests}
+Each individual module is being tested during development. These tests are tailored to the type of module being tested
+
+For instance, each encoding module is connected to itself to verify the what is encoded can be decoded correctly, without loss. This prevents accidental corruption of data by the encoding modules, which would cause the Tor connection to be taken down.
+
+Integration tests between modules also occur, to verify proper functionality. For instance, testing of the image gallery application along with Apache is necessary independent of HTPT development. 
+
+\subsection{Performance Characterization}
+As one of the goals is reasonable performance, various performance assesments are necessary. Since the goal was about relative performance, three iterations for each test is used: one with just a browser, one with the browser and Tor, and one with the browser, Tor, and HTPT. This will give relative performance for comparison. 
+
+The following test configurations are being used for performance characterizations:  
+\begin{enumerate}
+  \item Loading twenty popular web pages --- This will be a demonstration of latency. By finding the total time it takes to perform this operation, additional latency can be seen. This test will not work directly with the browser and HTPT, so it is not being performed directly. 
+  \item Downloading 1 gigabyte file over HTTP --- This is an example of a bulk download that will allow measurement of goodput.
+  \item Uploading 1 gigabyte file over HTTP --- Since this is an assymetric encoding scheme, upload goodput testing is required.
+\end{enumerate}
+
+%\subsection{DPI Testing}
+%In an ideal world, where there is unlimited testing time, the testing framework developed by Tor \cite{Ref14} would be used. 

@@ -1,0 +1,71 @@
+\documentclass{acmsmall}
+\usepackage[ruled]{algorithm2e}
+\renewcommand{\algorithmcfname}{ALGORITHM}
+\SetAlFnt{\small}
+\SetAlCapFnt{\small}
+\SetAlCapNameFnt{\small}
+\SetAlCapHSkip{0pt}
+\IncMargin{-\parindent}
+
+\makeatletter
+\def\ps@headings{%
+\def\@oddhead{\mbox{}\scriptsize\rightmark\hfil\thepage}%
+\def\@evenhead{\scriptsize\thepage\hfil\leftmark\mbox{}}%
+\def\@oddfoot{}%
+\def\@evenfoot{}}
+\makeatother
+\usepackage{caption}
+\pagestyle{headings}
+\usepackage{cite}
+\usepackage{rotating}
+\usepackage{amssymb,amsmath}
+\usepackage{multirow}
+\usepackage{verbatim}
+\addtolength{\textfloatsep}{-5mm} \addtolength{\floatsep}{-3mm}
+\usepackage{lettrine}
+\usepackage{flushend}
+\usepackage{array,booktabs,arydshln,xcolor}
+\usepackage{graphicx}
+\newcommand\VRule[1][\arrayrulewidth]{\vrule width #1}
+\usepackage{wasysym}
+
+\newenvironment{checklist}{%
+  \begin{list}{}{}% whatever you want the list to be
+  \let\olditem\item
+  \renewcommand\item{\olditem[$\Box$] }
+  \newcommand\checkeditem{\olditem[$\CheckedBox$]}
+
+}{%
+  \end{list}
+}
+
+\def\draftmode{}
+\ifx\draftmode\undefined
+\newcommand{\mcomment}[1]{}
+\else
+\newcommand{\mcomment}[1]{$\Longleftarrow${\bf $<$#1$>$} }
+\fi
+
+\DeclareGraphicsExtensions{.eps,.png}
+
+
+\begin{document}
+
+\markboth{}{Hiding Data in HTTP: A Network Steganography Project}
+
+\title{Hiding Data in HTTP: A Network Steganography Project}
+\author{Sean Donovan, Sathyanarayanan Gunasekaran, Sarthak Grover, Karim Habak, and Ben Jones}
+\maketitle
+
+\input{Abstract}
+\input{Introduction}
+\input{Design}
+\input{Testing}
+\input{Progress}
+\input{FutureWork}
+
+\nocite{Ref1,Ref2,Ref3,Ref4,Ref5,Ref6,Ref7,Ref8,Ref9,Ref10,Ref12,Ref13,Ref14,Ref15 }
+
+\bibliographystyle{ACM-Reference-Format-Journals}
+\bibliography{Tor}
+\end{document}
