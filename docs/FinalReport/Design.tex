@@ -20,7 +20,7 @@ An additional goal is to provide plausible traffic going from the client to the 
 
 In many situations, users will want to use HTTP to upload large amounts of data. However, HTTP and our transport are client-server protocols, which means clients typically send small requests to the server and the server returns large responses. HTPT mimics this structure, but also allows the user to achieve significant upload throughput. By structuring the upload traffic to look like images being uploaded to an image gallery, the user can achieve reasonable upload throughput while still maintaining an innocuous connection.
 
-Preventing obvious fingerprintable behaviors is also a desired goal. This means that the server should not always send 128KB JPEGs, but rather it should vary the size and data type regularly.  
+%Preventing obvious fingerprintable behaviors is also a desired goal. This means that the server should not always send 128KB JPEGs, but rather it should vary the size and data type regularly.  
 
 Reasonable performance, as measured by both throughput and latency, is a desired goal. Latency is most important for users of interactive websites, while reasonable throughput is required for uploading and downloading bulk data. 
 
@@ -39,17 +39,16 @@ The overall architecture is represented in Figure~\ref{fig:overall_arch}. It is 
 \label{fig:overall_arch}
 \end{figure}
 
-On the client-side, there is a SOCKS interface that HTPT presents to its user, typically Tor as is represented here. HTPT is then connected to an HTTP sending module that interacts with the server-side.
+On the client-side, there is a socket interface that HTPT presents to its user, typically Tor as is represented here. HTPT is then connected to an HTTP sending module that interacts with the server-side.
 
-The server-side from the top down is very similar: Tor connects via SOCKS with HTPT. At this point, the design diverges significantly. For this, looking from the bottom up is useful. 
+The server-side from the top down is very similar: Tor connects via socket with HTPT. At this point, the design diverges significantly. For this, looking from the bottom up is useful. 
 %The client uses Selenium, a web browser orchestration framework, in conjunction with the Tor Browser Bundle, a packaged Tor client and Firefox web browser, to properly simulate web traffic and handle errors. 
 The client uses urllib2, which is the Python framework for downloading web data, not dissimilar from wget.
 
-The client connects to Apache, which is running the Web Server Gateway Interface module. This is a specification to allow web servers to communicate with web applications \cite{Ref16}. This is used to interface with the Authorization/Decision module that is part of the HTPT package. It is used to decide whether to send the traffic to the Image Gallery (for non-authorized traffic), or to the HTPT Passthrough (for authorized traffic). This is what it sounds: a simple passthrough. Traffic is then handed off the HTPT. 
+The client connects to Apache, which is running the Web Server Gateway Interface (WSGI) module. This is a specification to allow web servers to communicate with web applications \cite{Ref16}. This is used to interface with the Authorization/Decision module that is part of the HTPT package. It is used to decide whether to send the traffic to the Image Gallery (for non-authorized traffic), or to the HTPT Passthrough (for authorized traffic). This is what it sounds: a simple passthrough. Traffic is then handed off the HTPT. 
 
 The reverse is also true: traffic from the server to the client goes through the same layers, just in reverse. 
 
-% SPD Move much of this to Future work?
 \begin{figure}[b]
 \centering
 \includegraphics[width=0.3\textwidth]{htpt_architecture}
@@ -57,26 +56,27 @@ The reverse is also true: traffic from the server to the client goes through the
 \label{fig:htpt_modules}
 \end{figure}
 
-Within HTPT, there are four main modules, as can be seen in Figure~\ref{fig:htpt_modules}. The SOCKS interface is the primary interface for communicating with Tor. This can also be used for other clients in a similar fashion, but in a much more limited manner.
+Within HTPT, there are four main modules, as can be seen in Figure~\ref{fig:htpt_modules}. The socket interface is the primary interface for communicating with Tor. This can also be used for other clients in a similar fashion, but in a much more limited manner.
 
 The Encoding Decision module is the main location where anti-fingerprinting measures are taken. Right now, this is very simplistic, encoding as a URL if a client, as an PNG if a server. 
 
-This also acts as a framing module. Since each send operation opens a transient connection, reordering of data is vital. To handle this, sequence numbers are assigned by the Encoding Decision module. It is responsible for reorder of received data, for similar reasons. 
+%This also acts as a framing module. 
+Since each send operation opens a transient TCP connection, reordering of data is vital. To handle this, sequence numbers are assigned by theFraming module. It is responsible for reordering of received data, for similar reasons. 
 
 The Send/Receive module is an interface module. It is different for both the client and the server, as the lower interface is different. The client-side Send/Receive module will interface with an HTTP Sending Module, while the server-side will interface with the HTPT Passthrough.
 
-Between the Send/Receive module and the Encoding Decision module lies the encoding modules themselves. They have a standard interface and are designed in such a way that new encoding modules can be added. For instance, if a developer wanted to create CSS encoder that generated CSS that encodes data, it could be added to the existing encoders.
+Between the Send/Receive module and the Framing module lies the encoding modules themselves. They have a standard interface and are designed in such a way that new encoding modules can be added. For instance, if a developer wanted to create a CSS encoder that generats CSS that encodes data, it could be added to the existing encodering modules.
 
 \subsection{Encoding Schemes}
 There are currently six developed encoding modules. Each takes in a common header, optionally appends its own header, and a quantity of data. This is then encoded and sent out. The header is retrieved from the Encoding Decision module, such that consistent sequence numbers can be retrieved. Local headers can consist of padding information, if the particular item sends fixed-width data chunks. 
 
 \begin{enumerate}
-  \item \emph{Advertising URL Encoder} --- This encodes 39 bytes of data (plus 1 byte for a header telling the length of the data) at a time by mimicking an advertising header. These frequently have 80-character hex-encoded identifiers contained within them, and are useful for encoding small amounts of data from the client to the server.
-  \item \emph{Google Search String Encoder} --- This encodes variable, albeit small, amounts of data. Initial implementation uses 16 common English words to represent 4-bits of data, effectively acting as a hex encoder. These are then places in what looks like a Google search string that can be decoded on the receiving end.
+  \item \emph{Advertising URL Encoder} --- This encodes a 4-byte HTPT header, a 1-byte length field, and 35 bytes of data  at a time by mimicking an advertising header. These frequently have 80-character hex-encoded identifiers contained within them, and are useful for encoding small amounts of data from the client to the server. This is padded out, if there is less than 35 bytes of actual data with random data.
+  \item \emph{Google Search String Encoder} --- This encodes variable, albeit small, amounts of data. Initial implementation uses 16 common English words to represent 4-bits of data, effectively acting as a hex encoder. These are then placed in what looks like a Google search string that can be decoded on the receiving end.
   \item \emph{Baidu Search String Encoder} --- This is a similar scheme as the Google Search String Encoder, except that it is designed to create Baidu-like search strings.
-  \item \emph{Cookie Encoder Encoder} --- When data is encoded with one of 3 URL encoding schemes listed above, the URL can only be used to store 40 bytes of data. Every byte sent to the URL encoder beyond 40 bytes will be encoded as a series of cookies. Essentially, the data will be split into a key and a value, then compressed with Base64 encoding. When a GET request is sent to the server, each cookie is added as a field in the HTTP header.
+  \item \emph{Cookie Encoder Encoder} --- When data is encoded with one of 3 URL encoding schemes listed above, the URL can only be used to store 40 bytes of data. Every byte sent to the URL encoder beyond 40 bytes will be encoded as a series of cookies. Essentially, the data will be split into a key and a value, then Base64 encoded. When a GET request is sent to the server, each cookie is added as a field in the HTTP header.
   \item \emph{BMP Encoder} --- This is the most basic image encoder. A valid bitmap header is created, then the raw data makes up the image data.
-  \item \emph{JPEG Encoder} --- By using lossless JPEGs, data can be sent across without loss. This uses the BMP Encoder, and converts it into a lossless JPEG to be sent by either the client or server.
+  \item \emph{JPEG Encoder} --- By nature, JPEG is a lossy format. In order to avoid loss, Lossless JPEG is used. This uses the BMP Encoder, and converts it into a Lossless JPEG to be sent by either the client or server.
   \item \emph{PNG Encoder} --- This is a similar scheme as the JPEG Encoder, with PNGs as output.
 \end{enumerate}
 
@@ -84,8 +84,6 @@ This can easily be expanded to use other types of encoding. For instance, encodi
 
 \subsection{Framing and Performance Implications}
 As noted above, the encoding is an encapsulation scheme. The data from the client is treated as a byte-stream, much like data that is sent via TCP. A 4-byte header is attached on each segment sent. The segment is then encoded according to the selected scheme which is where the overhead comes into play. 
-
-
 
 %TODO: NEED A DIAGRAM OF HEADER
 

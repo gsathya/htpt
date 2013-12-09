@@ -13,4 +13,8 @@ Another further enhancement is to enhance authentication. Current authentication
 
 Replay attacks need to be looked at in greater detail to determine if further mitigation is needed.
 
+Implementing HTTP Pipelining is also a technique that should be applied to 
+
+Reuse of TCP connections should also be implemented
+
 %There is the possibility of the fingerprinting the header that all packets have. It would be hard to do, and would require stateful DPI. To mitigate this, encrypting the header or the entire packet again would be mitigate this. Encrypting the header is less costly computationally, and would be more than sufficient. Implementing some sort of key exchange algorithm (e.g., Diffie-Hellman) would be necessary as well.

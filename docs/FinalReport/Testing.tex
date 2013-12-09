@@ -9,15 +9,42 @@ For instance, each encoding module is connected to itself to verify the what is 
 
 Integration tests between modules also occur, to verify proper functionality. For instance, testing of the image gallery application along with Apache is necessary independent of HTPT development. 
 
-\subsection{Performance Characterization}
-As one of the goals is reasonable performance, various performance assesments are necessary. Since the goal was about relative performance, three iterations for each test is used: one with just a browser, one with the browser and Tor, and one with the browser, Tor, and HTPT. This will give relative performance for comparison. 
+\subsection{Performance}
 
-The following test configurations are being used for performance characterizations:  
-\begin{enumerate}
-  \item Loading twenty popular web pages --- This will be a demonstration of latency. By finding the total time it takes to perform this operation, additional latency can be seen. This test will not work directly with the browser and HTPT, so it is not being performed directly. 
-  \item Downloading 1 gigabyte file over HTTP --- This is an example of a bulk download that will allow measurement of goodput.
-  \item Uploading 1 gigabyte file over HTTP --- Since this is an assymetric encoding scheme, upload goodput testing is required.
-\end{enumerate}
+This section will go over the performance evaluation, mostly from a theoretical point of view. There will be discussion about specific areas where performance suffers, and areas that are `tunable'.
+
+\subsubsection{Overhead}
+This is the second most significant, but not necessarily controllable, factor in performance. Our testing focused on two different encoding schemes, namely the URL encoding scheme and the PNG encoding scheme.
+
+For the \emph{URL encoding} scheme, up to 35 bytes of data is transmitted in each URL. The overhead that exists is fairly consistent, with two factors that can vary the overhead size. First, there are the differences between IPv4 and IPv6 headers. For our testing, we only considered IPv4, as this is still the most common version of IP that is used. Second, there is the length of the website that is hosting the HTPT server. In our testing, the string that existed was ``localhost:80'', or 12 bytes long. This may not be reasonable in other instances, where the web address may be significantly longer. This does not preclude the usage of an IP address as the server's address, which will be, at most, 15 characters. 
+
+In our testing, 265 bytes were transmitted, which encoded 35 bytes of useful data. This is a 13\% valid data vs. total data ratio. Clearly, this is not ideal, but it is not suspicious. This can be further improved by using cookies, as the valid data to total data ratio of the cookie itself will be significantly higher, approaching 75\% using base64 encoding.
+
+For the \emph{PNG encoding} scheme, significantly more data is transmitted at once, resulting in very low overhead. Unfortunately, this will be less consistent than the URL encoding scheme for a number of reasons. PNG encoding may compress the data, particularly if there is a significantly amount of the same data being sent across. There is also the issue of spanning multiple TCP frames, but this may not be a significant issue. If the image was to span multiple TCP frames, in all likelihood, the original data would span \emph{those same frames}. If there is no compression (or expansion of data) and full sized frames are used (i.e., >= 1500 bytes), at most there will be a single extra TCP frame due to the initial HTTP overhead.
+
+In our tests, 8110 bytes were transmitted, which encoded 8192 bytes of useful data. This is due to a small amount of compression, and is not likely a typical case.  
+
+Bitmap encoding would be significantly more consistent, as it is similar to the URL encoding in that data is sent more-or-less in the raw.
+	
+Note: this is ignoring the TCP connection establishment overhead. This occurs on every piece of transmitted data, but is being glossed over in the overhead section, as it is more affecting of timing rather than of data transmission. 
+
+\subsubsection{Timing}
+There are three main pieces of timing information that were looked at during the evaluation phase of this project. The first two are CPU dependent, while the final one was a design decision. 
+
+The two encoding schemes' encoding and transmission times were, for the most part, CPU bound. Testing was performed on a single machine, to eliminate network transmission times, so it is safe to say that this was a CPU bound operation. URL encoding and transmission was reasonably quick, at around 2ms per encoded URL. PNG encoding and transmission, on the other hand was rather slow, hovering around 70ms. Transmission time, in the PNG case, was small, in that it was transmitting one frame, so virtually the entire 70ms was spent encoding as a PNG.
+
+As it is CPU bound, a faster processor would be able to shorten these times, but not eliminate them. It is not a quick process, in any case, and would contribute to latency experienced by the end user. 
+
+The far more important piece of timing that would affect the user's experience is the polling time that was used. After receiving data, a 100ms gap occurs before requesting any more data. This was simply for the prototype, and could be reevaluated how the polling occurs. Possibilities include polling immediately if a `MORE' bit is set within the HTPT header, with 100ms polling being the norm otherwise. This is a complex decision, as it would affect how easy it is to fingerprint HTPT traffic. 
+
+%As one of the goals is reasonable performance, various performance assesments are necessary. Since the goal was about relative performance, three iterations for each test is used: one with just a browser, one with the browser and Tor, and one with the browser, Tor, and HTPT. This will give relative performance for comparison. 
+
+%The following test configurations are being used for performance characterizations:  
+%\begin{enumerate}
+%  \item Loading twenty popular web pages --- This will be a demonstration of latency. By finding the total time it takes to perform this operation, additional latency can be seen. This test will not work directly with the browser and HTPT, so it is not being performed directly. 
+%  \item Downloading 1 gigabyte file over HTTP --- This is an example of a bulk download that will allow measurement of goodput.
+%  \item Uploading 1 gigabyte file over HTTP --- Since this is an assymetric encoding scheme, upload goodput testing is required.
+%\end{enumerate}
 
 %\subsection{DPI Testing}
 %In an ideal world, where there is unlimited testing time, the testing framework developed by Tor \cite{Ref14} would be used. 
