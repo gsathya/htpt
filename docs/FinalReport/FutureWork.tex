@@ -2,10 +2,15 @@
 
 There are significant possibilities for expanding this work. 
 %The initial intent was to develop a Pluggable Transport, and this is the most important piece of future enhancement. This would involve either modifying obfsproxy or manually integrating with with Tor.
+
+The biggest improvement could be made in the framing module.  This module could vary the encoding scheme and encoding amount such that the same style of data is not seen consistently. This can be done by using a timer to buffer data up to a random amount of data to be sent. If that random amount is seen before the timer expires, it is sent, and a new random time and amount of data is chosen. This should make inter-arrival times more random than Tor normally is. 
+
+Which encoding scheme is chosen depends on whether HTPT is acting in the client or server mode, and the data rate. This is measured based on the pervious transmission. That is, if 1000 bytes was received in the previous 10 milliseconds, the data rate can be calculated as being 100,000 bytes per second. This assumes that the data rate stays constant, which is why the time and buffer sizes are used in conjunction with each other.
+
 Integrating this into the obfsproxy framework and bundling with the Tor Browser Bundle would be good to do in the future.
 
 Another further enhancement is to enhance authentication. Current authentication is basic HTTP's basic access authentication. This is very simplistic, and any information is sent in plaintext. Clearly, that is a security problem, so a more secure authentication scheme is justified.
 
-%Replay attacks have not been explicitly looked into. These need to be looked at in greater detail to determine if further mitigation is needed.
+Replay attacks need to be looked at in greater detail to determine if further mitigation is needed.
 
 %There is the possibility of the fingerprinting the header that all packets have. It would be hard to do, and would require stateful DPI. To mitigate this, encrypting the header or the entire packet again would be mitigate this. Encrypting the header is less costly computationally, and would be more than sufficient. Implementing some sort of key exchange algorithm (e.g., Diffie-Hellman) would be necessary as well.

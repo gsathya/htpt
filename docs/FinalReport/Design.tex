@@ -1,5 +1,7 @@
 \section{Design}
-HTPT is designed to be a SOCKS proxy. Since client and server HTTP traffic is different, the encoding in each direction is asymmetric. That is, the client-side and server-side encoding is different, and the decoding is similarly asymmetric such that the client can decode server data and vice versa. In what follows, the threat model will be discussed, followed by the goals, HTPT's architecture, and finally the implemented encoding schemes.
+HTPT is designed to be a socket proxy. Since client and server HTTP traffic is different, the encoding in each direction is asymmetric. That is, the client-side and server-side encoding is different, and the decoding is similarly asymmetric such that the client can decode server data and vice versa. In what follows, the threat model will be discussed, followed by the goals, HTPT's architecture, and finally the implemented encoding schemes.
+
+Additionally, since HTTP is a pull-based protocol, HTPT necessarily is pull-based. Clients must poll the server in order to get data.
 
 \subsection{Threat Model}
 HTPT's threat model includes the following:
@@ -12,7 +14,7 @@ HTPT's threat model includes the following:
 \end{enumerate}
 
 \subsection{Design Goals}
-With the threat model in mind, the main goal is to increase the cost for a censor to discover the underlying Tor stream. For this reason, the Tor bridge will mimic an image gallery. Authenticated users will be allowed to send Tor traffic through the web server, while non-authenticated users will be returned a simple image gallery website. This means that the website must be able to correctly identify Tor and non-Tor traffic, and direct the traffic to the correct handlers. 
+With the threat model in mind, the main goal is to increase the cost for a censor to discover the underlying stream. For this reason, the server will mimic an image gallery. Authenticated users will be allowed to send traffic through the web server, while non-authenticated users will be returned a simple image gallery website. This means that the website must be able to correctly identify HTPT and non-HTPT traffic, and direct the traffic to the correct handlers. 
 
 An additional goal is to provide plausible traffic going from the client to the server and vice versa. This effectively means that multiple encoding schemes must be created, as client traffic looks significantly different from server traffic in HTTP. 
 
@@ -20,7 +22,7 @@ In many situations, users will want to use HTTP to upload large amounts of data.
 
 Preventing obvious fingerprintable behaviors is also a desired goal. This means that the server should not always send 128KB JPEGs, but rather it should vary the size and data type regularly.  
 
-Reasonable performance, as measured by both `goodput' and latency, is a desired goal. Latency is most important for users of interactive websites, while reasonable goodput is required for uploading and downloading bulk data. 
+Reasonable performance, as measured by both throughput and latency, is a desired goal. Latency is most important for users of interactive websites, while reasonable throughput is required for uploading and downloading bulk data. 
 
 \subsection{Motivations}
 Though it seems odd to add yet another layer to an already tall stack, HTPT is similar to other protocols like IPSEC. It seems like the additional layer would introduce excessive overhead, but the purpose of this layer is to provide security first and performance second. This layer can be removed or inserted as necessary and is not required to exist. Despite the focus of this protocol on security, the size of images allow large amounts of data to be sent with limited headers. The limited overhead from headers should allow HTPT to achieve high throughput.
@@ -41,11 +43,13 @@ On the client-side, there is a SOCKS interface that HTPT presents to its user, t
 
 The server-side from the top down is very similar: Tor connects via SOCKS with HTPT. At this point, the design diverges significantly. For this, looking from the bottom up is useful. 
 %The client uses Selenium, a web browser orchestration framework, in conjunction with the Tor Browser Bundle, a packaged Tor client and Firefox web browser, to properly simulate web traffic and handle errors. 
-The client uses Headless Webkit, which is the Webkit browser engine that has been modified to not need user interaction to properly simulate web traffic and handle errors.
+The client uses urllib2, which is the Python framework for downloading web data, not dissimilar from wget.
+
 The client connects to Apache, which is running the Web Server Gateway Interface module. This is a specification to allow web servers to communicate with web applications \cite{Ref16}. This is used to interface with the Authorization/Decision module that is part of the HTPT package. It is used to decide whether to send the traffic to the Image Gallery (for non-authorized traffic), or to the HTPT Passthrough (for authorized traffic). This is what it sounds: a simple passthrough. Traffic is then handed off the HTPT. 
 
-The reverse is also true: traffic from the Tor Bridge to the Tor client goes through the same layers, just in reverse. 
+The reverse is also true: traffic from the server to the client goes through the same layers, just in reverse. 
 
+% SPD Move much of this to Future work?
 \begin{figure}[b]
 \centering
 \includegraphics[width=0.3\textwidth]{htpt_architecture}
@@ -55,17 +59,13 @@ The reverse is also true: traffic from the Tor Bridge to the Tor client goes thr
 
 Within HTPT, there are four main modules, as can be seen in Figure~\ref{fig:htpt_modules}. The SOCKS interface is the primary interface for communicating with Tor. This can also be used for other clients in a similar fashion, but in a much more limited manner.
 
-The Encoding Decision module is the main location where anti-fingerprinting measures are taken. This module varies the encoding scheme and encoding amount such that the same style of data is not seen consistently. This is done by using a timer to buffer data up to a random amount of data to be sent. If that random amount is seen before the timer expires, it is sent, and a new random time and amount of data is chosen. This should make inter-arrival times more random than Tor normally is. 
-
-Which encoding scheme is chosen depends on whether HTPT is acting in the client or server mode, and the data rate. This is measured based on the pervious transmission. That is, if 1000 bytes was received in the previous 10 milliseconds, the data rate can be calculated as being 100,000 bytes per second. This assumes that the data rate stays constant, which is why the time and buffer sizes are used in conjunction with each other.
+The Encoding Decision module is the main location where anti-fingerprinting measures are taken. Right now, this is very simplistic, encoding as a URL if a client, as an PNG if a server. 
 
 This also acts as a framing module. Since each send operation opens a transient connection, reordering of data is vital. To handle this, sequence numbers are assigned by the Encoding Decision module. It is responsible for reorder of received data, for similar reasons. 
 
 The Send/Receive module is an interface module. It is different for both the client and the server, as the lower interface is different. The client-side Send/Receive module will interface with an HTTP Sending Module, while the server-side will interface with the HTPT Passthrough.
 
 Between the Send/Receive module and the Encoding Decision module lies the encoding modules themselves. They have a standard interface and are designed in such a way that new encoding modules can be added. For instance, if a developer wanted to create CSS encoder that generated CSS that encodes data, it could be added to the existing encoders.
-
-Of note: this is a pull protocol. The client can push data to the server, but the server must be polled for more data. This is due to the nature of HTTP, and such mechanisms for polling for more data already exist: see how AJAX systems work.
 
 \subsection{Encoding Schemes}
 There are currently six developed encoding modules. Each takes in a common header, optionally appends its own header, and a quantity of data. This is then encoded and sent out. The header is retrieved from the Encoding Decision module, such that consistent sequence numbers can be retrieved. Local headers can consist of padding information, if the particular item sends fixed-width data chunks. 
@@ -80,8 +80,11 @@ There are currently six developed encoding modules. Each takes in a common heade
   \item \emph{PNG Encoder} --- This is a similar scheme as the JPEG Encoder, with PNGs as output.
 \end{enumerate}
 
+This can easily be expanded to use other types of encoding. For instance, encoding as a Animated GIF would be possible. Virtually any MIME-type could be used, but the only caveat is that it should be a \emph{valid} version of the filetype. If the files are not valid, this is particularly fingerprintable. An adversary could look for IP addresses that send out invalid Animated GIF and block them as they make be using HTPT.
+
 \subsection{Framing and Performance Implications}
-As noted above, the encoding is an encapsulation scheme. The data from Tor, or any other SOCKS enabled client, is treated as a byte-stream, much like data that is sent via TCP. A 4-byte header is attached on each segment sent. The segment is then encoded according to the selected scheme which is where the overhead comes into play. As development completes, the performance of the protocol will be evaluated experimentally.
+As noted above, the encoding is an encapsulation scheme. The data from the client is treated as a byte-stream, much like data that is sent via TCP. A 4-byte header is attached on each segment sent. The segment is then encoded according to the selected scheme which is where the overhead comes into play. 
+
 
 
 %TODO: NEED A DIAGRAM OF HEADER
