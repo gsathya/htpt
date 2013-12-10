@@ -45,7 +45,7 @@ The server-side from the top down is very similar: Tor connects via socket with 
 %The client uses Selenium, a web browser orchestration framework, in conjunction with the Tor Browser Bundle, a packaged Tor client and Firefox web browser, to properly simulate web traffic and handle errors. 
 The client uses urllib2, which is the Python framework for downloading web data, not dissimilar from wget.
 
-The client connects to Apache, which is running the Web Server Gateway Interface (WSGI) module. This is a specification to allow web servers to communicate with web applications \cite{Ref16}. This is used to interface with the Authorization/Decision module that is part of the HTPT package. It is used to decide whether to send the traffic to the Image Gallery (for non-authorized traffic), or to the HTPT Passthrough (for authorized traffic). This is what it sounds: a simple passthrough. Traffic is then handed off the HTPT. 
+The client connects to Apache, which is running the Web Server Gateway Interface (WSGI) module. This is a specification to allow web servers to communicate with web applications \cite{Ref16}. This is used to interface with the Authorization/Decision module that is part of the HTPT package. It is used to decide whether to send the traffic to the Image Gallery (for non-authorized traffic), or to the HTPT Passthrough (for authorized traffic). This is what it sounds: a simple passthrough. Traffic is then handed off the HTPT.  Note that Apache can be changed for other web server software, so long as it support WSGI.
 
 The reverse is also true: traffic from the server to the client goes through the same layers, just in reverse. 
 

@@ -1,4 +1,4 @@
-\section{Testing}
+\section{Testing and Evaluation}
 
 Testing was an ongoing process. During development unit tests are used, and after development, performance tests are used. 
 
@@ -19,6 +19,13 @@ This is the second most significant, but not necessarily controllable, factor in
 For the \emph{URL encoding} scheme, up to 35 bytes of data is transmitted in each URL. The overhead that exists is fairly consistent, with two factors that can vary the overhead size. First, there are the differences between IPv4 and IPv6 headers. For our testing, we only considered IPv4, as this is still the most common version of IP that is used. Second, there is the length of the website that is hosting the HTPT server. In our testing, the string that existed was ``localhost:80'', or 12 bytes long. This may not be reasonable in other instances, where the web address may be significantly longer. This does not preclude the usage of an IP address as the server's address, which will be, at most, 15 characters. 
 
 In our testing, 265 bytes were transmitted, which encoded 35 bytes of useful data. This is a 13\% valid data vs. total data ratio. Clearly, this is not ideal, but it is not suspicious. This can be further improved by using cookies, as the valid data to total data ratio of the cookie itself will be significantly higher, approaching 75\% using base64 encoding.
+
+\begin{figure}
+\centering
+\includegraphics[width=1.0\textwidth]{wireshark}
+\caption{Wireshark trace showing test stream}
+\label{fig:wireshark}
+\end{figure}
 
 For the \emph{PNG encoding} scheme, significantly more data is transmitted at once, resulting in very low overhead. Unfortunately, this will be less consistent than the URL encoding scheme for a number of reasons. PNG encoding may compress the data, particularly if there is a significant amount of the same data being sent across. There is also the issue of spanning multiple TCP frames, but this may not be a significant issue. If the image was to span multiple TCP frames, in all likelihood, the original data would span \emph{those same frames}. If there is no compression (or expansion of data) and full sized frames are used (i.e., >= 1500 bytes), at most there will be a single extra TCP frame due to the initial HTTP overhead.
 
@@ -48,3 +55,6 @@ The far more important piece of timing that would affect the user's experience i
 
 %\subsection{DPI Testing}
 %In an ideal world, where there is unlimited testing time, the testing framework developed by Tor \cite{Ref14} would be used. 
+
+\subsection{Security Aspects}
+The security considerations that we considered are seemingly satisfied. It would be very difficult to detect that the data that is transiting this server is obfuscated real data, even with deep Deep Packet Inspection. This is due to the design of using HTTP as a carrier for censored data. The gallery also provides a layer of security in that it prevents active probing attacks. Automated attacks would detect a web gallery of some variety, while an actual person would also see what appears to be a proper image gallery.
