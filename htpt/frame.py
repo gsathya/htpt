@@ -16,35 +16,49 @@ class FramingException(Exception):
 
 
 class SeqNumber():
-  def __init__(self, seqNum = 0):
-    """Initialize the framing package with the given sequence number"""
-    self.seqNum = seqNum
-    self.initialized = True
-    self._lock = threading.Lock()
+  _seqNum = -1
+  _lock = threading.Lock()
+  @classmethod
+  def setSeqNum(cls, seqNum):
+    cls._lock.acquire()
+    cls._seqNum = seqNum
+    cls._lock.release()
 
-  def getSequenceAndIncrement(self):
-    """In a thread safe manner, get the sequence number"""
-    self._lock.acquire()
-    self.seqNum = ((self.seqNum + 1) % MAX_SEQ_NUM)
-    self._lock.release()
-    return self.seqNum
+  @classmethod  
+  def getSequenceAndIncrement(cls):
+    """
+    In a thread safe manner, get the sequence number and increment.
+    
+    Note: this function is called only when a new client connects
+    """
+    cls._lock.acquire()
+    cls._seqNum = ((cls._seqNum + 1) % MAX_SEQ_NUM)
+    cls._lock.release()
+    return cls._seqNum
 
 class SessionID():
   """Class to generate a new session ID when a new client connects to the server"""
-  def __init__(self, sessionID=0):
-    """Initialize the new session ID"""
-    self.sessionID = sessionID
-    self.initialized = True
-    self._lock = threading.Lock()
+  
+  _sessionID = 0
+  _lock = threading.Lock()
+  @classmethod
+  def setSessionID(cls, sessionID):
+    cls._lock.acquire()
+    cls._sessionID = sessionID
+    cls._lock.release()
 
-  def getSessionIDAndIncrement(self):
-    """In a thread safe manner, get the session ID
+  @classmethod  
+  def getSessionIDAndIncrement(cls):
+    """
+    In a thread safe manner, get the session ID.
+    
+    Note: this function is called only when a new client connects
 
-    this function is called only when a new client connects"""
-    self._lock.acquire()
-    self.sessionID = ((self.sessionID + 1) % MAX_SESSION_NUM)
-    self._lock.release()
-    return self.sessionID
+    """
+    cls._lock.acquire()
+    cls._sessionID = ((cls._sessionID + 1) % MAX_SESSION_NUM)
+    cls._lock.release()
+    return cls._sessionID
 
 class Assemble():
   """Class to Assemble a data frame with headers before sending to encoder"""

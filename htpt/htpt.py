@@ -44,7 +44,6 @@ class HTPT():
   def run_client(self):
     # initialize the connection
     self.assembler = frame.Assemble()
-    self.assembler.seqNum = frame.SeqNumber(-1)
     # bind to a local address and wait for Tor to connect
     self.torBinder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.torBinder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -54,7 +53,6 @@ class HTPT():
 
     #now that we have a Tor connection, start sending data to server
     self.bridgeConnect(TOR_BRIDGE_ADDRESS, TOR_BRIDGE_PASSWORD)
-    self.assembler.seqNum = frame.SeqNumber(-1)
     self.timeout = datetime.now()
 
     while 1:
@@ -180,7 +178,6 @@ def processRequest():
           htptObject.assembler.setSessionID(sessionID)
           htptObject.disassembler.setSessionID(sessionID)
           #we initialize it to start sending with seq number 1
-          htptObject.assembler.seqNum = frame.SeqNumber(-1)
           #send back a blank image with the new session id
           framed = htptObject.assembler.assemble('')
           image = imageEncode.encode(framed, 'png')
@@ -237,7 +234,6 @@ if __name__ == '__main__':
     # initialize the connection
     htptObject.sessionIDs = frame.SessionID()
     htptObject.assembler = frame.Assemble()
-    htptObject.assembler.seqNum = frame.SeqNumber(-1)
     # bind to a local address and wait for Tor to connect
     htptObject.torBinder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     htptObject.torBinder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
