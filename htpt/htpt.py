@@ -32,6 +32,7 @@ TIMEOUT = 0.1 #max number of seconds between calls to read from the server
 #TODO
 TOR_BRIDGE_ADDRESS = "localhost:5000"
 TOR_BRIDGE_PASSWORD = "hello"
+PASSWORDS = [TOR_BRIDGE_PASSWORD]
 
 # Note: I wrote this hastily, so the function names within our modules
 # are likely different
@@ -39,11 +40,11 @@ TOR_BRIDGE_PASSWORD = "hello"
 class HTPT():
   def __init__(self):
     self.addressList = []
-    self.disassembler = frame.Disassemble(callback)
+    self.disassembler = frame.Disassembler(callback)
 
   def run_client(self):
     # initialize the connection
-    self.assembler = frame.Assemble()
+    self.assembler = frame.Assembler()
     # bind to a local address and wait for Tor to connect
     self.torBinder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.torBinder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -169,25 +170,24 @@ def processRequest():
       else:
         encoded = {'url':request.url, 'cookie':[]}
         decoded = urlEncode.decode(encoded)
-        password = htptObject.disassembler.initServerConnection(decoded)
-        # if they successfully authenticate, continue
-        if password == TOR_BRIDGE_PASSWORD:
-          addressList.append(request.remote_addr)
-#          htptObject.conn = htptObject.assembler(htptObject.disassembler.getSeqNum())
-          sessionID = htptObject.sessionIDs.getSessionIDAndIncrement()
-          htptObject.assembler.setSessionID(sessionID)
-          htptObject.disassembler.setSessionID(sessionID)
-          #we initialize it to start sending with seq number 1
-          #send back a blank image with the new session id
-          framed = htptObject.assembler.assemble('')
-          image = imageEncode.encode(framed, 'png')
-          return serveImage(image)
+        sender, receiver = frame.initServerConnection(decoded, PASSWORDS, callback)
+        # if the client sent a bad password, print an error message
+        # and return an empty image
+        if sender == False:
+          print "Bad password entered"
+          return sendToImageGallery(request)
+        # Note: this will need to change to accomodate multiple client sessions
+        htptObject.assembler = sender
+        htptObject.disassembler = receiver
+        addressList.append(request.remote_addr)
+        #send back a blank image with the new session id
+        framed = htptObject.assembler.assemble('')
+        image = imageEncode.encode(framed, 'png')
+        return serveImage(image)
           #TODO
           #setup some way to maintain a single Internet connection per client
-        else:
-          print "Bad password entered"
-    # if this is an initialized client, then receive the data and see
-    # if we have anything to send
+  # if this is an initialized client, then receive the data and see
+  # if we have anything to send
   else:
     #receive the data
     decoded = urlEncode.decode({'url':request.url, 'cookie':request.cookies})
@@ -210,6 +210,12 @@ def processRequest():
     # send the data with apache
     return serveImage(encoded)
 
+def sendToImageGallery(request):
+  image = imageEncode.encode('', 'png')
+  response = make_response(image)
+  response.headers['Content-Type'] = 'image/png'
+  response.headers['Content-Disposition'] = 'attachment; filename=img.png'
+  return response
 
 def serveImage(image):
   response = make_response(image)
@@ -231,9 +237,6 @@ if __name__ == '__main__':
     htptObject.run_client()
   else:
     addressList = []
-    # initialize the connection
-    htptObject.sessionIDs = frame.SessionID()
-    htptObject.assembler = frame.Assemble()
     # bind to a local address and wait for Tor to connect
     htptObject.torBinder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     htptObject.torBinder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
