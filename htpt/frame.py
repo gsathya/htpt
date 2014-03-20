@@ -16,54 +16,82 @@ class FramingException(Exception):
 
 
 class SeqNumber():
-  def __init__(self, seqNum = 0):
-    """Initialize the framing package with the given sequence number"""
-    self.seqNum = seqNum
-    self.initialized = True
-    self._lock = threading.Lock()
+  # initialize this to -1 so that the first sequence number comes out to 0
+  _seqNum = -1
+  _lock = threading.Lock()
+  @classmethod
+  def setSeqNum(cls, seqNum):
+    cls._lock.acquire()
+    cls._seqNum = seqNum
+    cls._lock.release()
 
-  def getSequenceAndIncrement(self):
-    """In a thread safe manner, get the sequence number"""
-    self._lock.acquire()
-    self.seqNum = ((self.seqNum + 1) % MAX_SEQ_NUM)
-    self._lock.release()
-    return self.seqNum
+  @classmethod  
+  def getSequenceAndIncrement(cls):
+    """
+    In a thread safe manner, get the sequence number and increment.
+    
+    Note: this function is called only when a new client connects
+    """
+    cls._lock.acquire()
+    cls._seqNum = ((cls._seqNum + 1) % MAX_SEQ_NUM)
+    cls._lock.release()
+    return cls._seqNum
 
 class SessionID():
   """Class to generate a new session ID when a new client connects to the server"""
-  def __init__(self, sessionID=0):
-    """Initialize the new session ID"""
-    self.sessionID = sessionID
-    self.initialized = True
-    self._lock = threading.Lock()
+  
+  _sessionID = 0
+  _lock = threading.Lock()
+  @classmethod
+  def setSessionID(cls, sessionID):
+    cls._lock.acquire()
+    cls._sessionID = sessionID
+    cls._lock.release()
 
-  def getSessionIDAndIncrement(self):
-    """In a thread safe manner, get the session ID
+  @classmethod  
+  def getSessionIDAndIncrement(cls):
+    """
+    In a thread safe manner, get the session ID.
+    
+    Note: this function is called only when a new client connects
 
-    this function is called only when a new client connects"""
-    self._lock.acquire()
-    self.sessionID = ((self.sessionID + 1) % MAX_SESSION_NUM)
-    self._lock.release()
-    return self.sessionID
+    """
+    cls._lock.acquire()
+    cls._sessionID = ((cls._sessionID + 1) % MAX_SESSION_NUM)
+    cls._lock.release()
+    return cls._sessionID
 
-class Assemble():
+class Assembler():
   """Class to Assemble a data frame with headers before sending to encoder"""
+
   def __init__(self, sessionID=0):
     """Initialize SeqNumber object and sessionID"""
+    # initialize the seq number to 0 and start sending frames
     self.seqNum = SeqNumber()
     self.setSessionID(sessionID)
 
   def setSessionID(self, sessionID):
-    """Function to allow upper abstraction to set sessionID for sender"""
+    """
+    Set the session ID for this sender
+
+    Note: this should be called by the client upon receiving the ACK
+    packet (first packet) back from the server. The client should get
+    the session ID from the Disassembler and add it here
+
+    """
     self.sessionID = sessionID
 
   def getSessionID(self):
-    """Function to retrieve the client's or server's session ID
+    """
+    Get the sessionID for this assembler
 
-    server assigns a new session ID when a new client connects to
-    it. server maintains sessionID on its end. client should retrieve
-    sessionID from the ACK packet (from SYN-ACK) and set it as
-    self.sessionID"""
+    Note: this is not an instance of the SessionID class which
+    generates unique sessionIDs. This stores the generated ID.
+
+    Note: this function will be called when creating the flags for an
+    outgoing frame
+
+    """
     return self.sessionID
 
   def generateFlags(self, **kwargs):
@@ -127,31 +155,13 @@ class Assemble():
     return frame
 
 
-class Disassemble:
+class Disassembler:
   """Class to Disassemble a decoded packet into headers+data before sending to buffers"""
   def __init__(self, callback):
     self.callback = callback
-    # allocate a buffer to receive data and flush it
+    # allocate a buffer to receive data
     self.buffer = Buffer()
-
     self.buffer.addCallback(self.callback)
-
-  def initServerConnection(self, frame):
-    """getting password from url; returns data"""
-    #get the data
-    headers = frame[:4]
-    self.retrieveHeaders(headers)
-    data = frame[4:]
-
-    #initialize the session id
-    #this should be done at higher layer using
-    #Assembler.setSessionID(sessionID.getSessionIDAndIncrement())
-    #should be done at the server only if client is new and SYN=1
-
-    #set the seqnumber to the value from the frame -- Ben
-    #no need to do this as seq num start from 0 and increment
-
-    return data
 
   def disassemble(self, frame):
     """
@@ -173,26 +183,28 @@ class Disassemble:
     data = frame[4:]
 
     # receive, reorder and flush at buffer
+#    print "In disassemble: {} {}".format(data, self.buffer.buffer)
     self.buffer.recvData(data, self.seqNum)
     return data
 
   def retrieveHeaders(self, headers):
     """Extract 4 byte header to seqNum, sessionID, Flags"""
 
-    headerTuple = struct.unpack('!HBB', headers)
-    self.seqNum = headerTuple[0]
+    seqNum, sessionID, flags = parseHeaders(headers)
+
+    self.seqNum = seqNum
 
     # retrieve flags
-    self.flags = headerTuple[2]
+    self.flags = flags
 
     # retrieved header sets the session ID if SYN flag is set
     # also add a check: if SYN flag not checked then
     # self.sessionid == headerTuple[1]
 
     #if self.flags & (1<<7):
-    self.setSessionID(headerTuple[1])
+    self.setSessionID(sessionID)
 
-    # Future: if flags = '1000' i.e. more_data, then send pull_request to
+    # TODO: if flags = '1000' i.e. more_data, then send pull_request to
     # server for more data
 
   def getSessionID(self):
@@ -205,3 +217,48 @@ class Disassemble:
 
   #def flush(self):
   #  self.buffer.flush()
+
+def parseHeaders(headers):
+  """ Parse the headers and return the values"""
+  headerTuple = struct.unpack('!HBB', headers)
+  seqNum = headerTuple[0]
+  sessionID = headerTuple[1]
+  flags = headerTuple[2]
+  return seqNum, sessionID, flags
+
+def initServerConnection(frame, passwords, callback):
+  """
+  Respond to an initialization request from a client
+
+  1. ensure that the password is correct-> do this by verifying that
+  it matches one of the passwords in the list
+  2. initialize the sessionID for this client
+  3. return an assembler and disassembler for this client
+
+  Note: this is a module method, it is not associated with an object
+
+  """
+
+  # parse the headers
+  headers = frame[:4]
+  seqNum, sessionID, flags = parseHeaders(headers)
+  data = frame[4:]
+
+  # Part 1: validate the password
+  # if this is a bad login attempt, then return False
+  if data not in passwords:
+    print "len: {} frame: {} seqNum: {} sessionID: {} flags: {} ".format(len(frame), frame, str(seqNum), str(sessionID), str(flags))
+    return False, False
+
+  # Part 2: initialize the session id using the SessionID class methods
+  sessionID = SessionID.getSessionIDAndIncrement()
+
+  # Part 3: return an assembler and disassembler for the client
+  sender = Assembler()
+#  print "seqNum: {}".format(sender.seqNum._seqNum)
+  sender.setSessionID(sessionID)
+  receiver = Disassembler(callback)
+  receiver.setSessionID(sessionID)
+
+  return sender, receiver
+

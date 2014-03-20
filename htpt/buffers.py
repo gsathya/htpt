@@ -21,6 +21,7 @@ class Buffer:
     else:
       self.minAcceptableSeqNum = 0
       self.maxAcceptableSeqNum = BUFFER_SIZE
+    self.receivedData = False
 
   def addCallback(self, callback):
     self.callback = callback
@@ -74,16 +75,27 @@ class Buffer:
     and advancing the window. For data out of order, we wait for buffer to
     receive packets and then flush it above."""
 
+    # if this is the first element, then set this to the min seq number
+    if self.receivedData == False:
+      self.minAcceptableSeqNum = seqNum
+      self.maxAcceptableSeqNum = seqNum + BUFFER_SIZE 
+      self.receivedData = True
     if not self.isSeqNumInBuffer(seqNum):
       raise BufferingException("seqNum already received/Not enough space in the buffer {} ".format(seqNum))
     index = (seqNum - self.minAcceptableSeqNum) % MAX_SEQ_NUM
-    self.buffer[index] = data
+#    print "len: {} data: {} index: {} seqNum: {}".format(len(data), data, index, seqNum)
+    # if the data is just an empty string and this is the first element, then do nothing
+    if data == "" and index == 0:
+      self.minAcceptableSeqNum = seqNum + 1
+      self.maxAcceptableSeqNum = seqNum + BUFFER_SIZE
+    else:
+      self.buffer[index] = data
     #coalesce every data element up to the first missing sequence
     availableData = ''
     while self.buffer[0] is not None:
       availableData += self.buffer.pop(0)
-      self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % BUFFER_SIZE)
-      self.maxAcceptableSeqNum = ((self.maxAcceptableSeqNum +1) % BUFFER_SIZE)
+      self.minAcceptableSeqNum = ((self.minAcceptableSeqNum +1) % MAX_SEQ_NUM)
+      self.maxAcceptableSeqNum = ((self.maxAcceptableSeqNum +1) % MAX_SEQ_NUM)
       self.buffer.append(None)
       # keep sending recvData until it finishes
       # This flushes availableData
