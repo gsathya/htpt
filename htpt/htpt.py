@@ -8,6 +8,7 @@
 from datetime import datetime
 import select
 import socket
+import socks
 import sys
 import urllib2
 
@@ -19,14 +20,18 @@ app = Flask(__name__)
 import frame
 import urlEncode
 import imageEncode
+from socks4a.htptProxy import ThreadingSocks4Proxy, ReceiveSocksReq, ForwardSocksReq
+
 #from htpt import frame
 #from htpt import urlEncode
 #from htpt import imageEncode
 
 #Constants
-CLIENT_LISTEN_PORT=8000 #local port to communicate to Tor with
-SERVER_LISTEN_PORT=8001
-TIMEOUT = 0.1 #max number of seconds between calls to read from the server
+CLIENT_SOCKS_PORT=8000 # communication b/w Tor and SOCKS server
+SERVER_SOCKS_PORT=9150 # communication b/w Tor and SOCKS client
+HTPT_CLIENT_SOCKS_PORT=8002   # communication b/w htpt and SOCKS
+#HTPT_SERVER_SOCKS_PORT=8003   # communication b/w htpt and SOCKS
+TIMEOUT = 0.5 #max number of seconds between calls to read from the server
 
 #Constants just to make this work-> remove
 #TODO
@@ -44,63 +49,65 @@ class HTPT():
 
   def run_client(self):
     # initialize the connection
-    self.assembler = frame.Assembler()
-    # bind to a local address and wait for Tor to connect
-    self.torBinder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    self.torBinder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    self.torBinder.bind(('localhost', CLIENT_LISTEN_PORT))
-    self.torBinder.listen(1)
-    (self.torSock, address) = self.torBinder.accept()
-
-    #now that we have a Tor connection, start sending data to server
-    self.bridgeConnect(TOR_BRIDGE_ADDRESS, TOR_BRIDGE_PASSWORD)
-    self.timeout = datetime.now()
-
     while 1:
-      # wait for data to send from Tor. Wait at most
-      readyToRead, readyToWrite, inError = \
-          select.select([self.torSock], [], [], TIMEOUT)
-      if readyToRead != []:
-        dataToSend = readyToRead[0].recv(1024*1000)
-        print "Client Sending: {}".format(dataToSend)
-        # if there is less than 35 bytes of data to send, then make
-        # sure that we still send it
-        while dataToSend != '':
-          segment = dataToSend[:35]
-          dataToSend = dataToSend[35:]
+      self.assembler = frame.Assembler()
+      # bind to a local address and wait for Tor to connect
+      self.torBinder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      self.torBinder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+      self.torBinder.bind(('localhost', HTPT_CLIENT_SOCKS_PORT))
+      self.torBinder.listen(1)
+      (self.torSock, address) = self.torBinder.accept()
+
+      #now that we have a Tor connection, start sending data to server
+      self.bridgeConnect(TOR_BRIDGE_ADDRESS, TOR_BRIDGE_PASSWORD)
+      self.timeout = datetime.now()
+
+      while 1:
+        # wait for data to send from Tor. Wait at most
+        readyToRead, readyToWrite, inError = \
+           select.select([self.torSock], [], [], TIMEOUT)
+        if readyToRead != []:
+          dataToSend = readyToRead[0].recv(1024*1000)
+          #        print "Client Sending: {}".format(dataToSend)
+          # if there is less than 35 bytes of data to send, then make
+          # sure that we still send it
+          while dataToSend != '':
+            segment = dataToSend[:35]
+            dataToSend = dataToSend[35:]
+            # put the headers on the data (not the actual function name)
+            framed = self.assembler.assemble(segment)
+            # encode the data
+            encoded = urlEncode.encode(framed, 'market')
+            # send the data with headless web kit
+            request = urllib2.Request(encoded['url'])
+            for cookie in encoded['cookie']:
+              request.add_header('Cookie:', cookie)
+            reader = urllib2.urlopen(request)
+            readData = reader.read()
+            # if we have received data from the Internet, then send it up to Tor
+            decoded = imageEncode.decode(readData, 'png')
+            self.disassembler.disassemble(decoded)
+            self.timeout = datetime.now()
+        else:
+          dataToSend = ''
           # put the headers on the data (not the actual function name)
-          framed = self.assembler.assemble(segment)
+          framed = self.assembler.assemble(dataToSend)
           # encode the data
           encoded = urlEncode.encode(framed, 'market')
           # send the data with headless web kit
           request = urllib2.Request(encoded['url'])
-          for cookie in encoded['cookie']:
-            request.add_header('Cookie:', cookie)
           reader = urllib2.urlopen(request)
           readData = reader.read()
           # if we have received data from the Internet, then send it up to Tor
           decoded = imageEncode.decode(readData, 'png')
           self.disassembler.disassemble(decoded)
-          self.timeout = datetime.now()
-      else:
-        dataToSend = ''
-        # put the headers on the data (not the actual function name)
-        framed = self.assembler.assemble(dataToSend)
-        # encode the data
-        encoded = urlEncode.encode(framed, 'market')
-        # send the data with headless web kit
-        request = urllib2.Request(encoded['url'])
-        reader = urllib2.urlopen(request)
-        readData = reader.read()
-        # if we have received data from the Internet, then send it up to Tor
-        decoded = imageEncode.decode(readData, 'png')
-        self.disassembler.disassemble(decoded)
 
-      # if we go have not received or send data for 10 min, end the program
-      if (datetime.now() - self.timeout).total_seconds() > 60*10:
+        # if we go have not received or send data for 10 min, end the program
+        if (datetime.now() - self.timeout).total_seconds() > 30:
         # close the local socket to tor
-        self.torSock.close()
-        break
+          self.torSock.send("closing")
+          self.torSock.close()
+          break
 
   def bridgeConnect(self, address, password):
     """
@@ -146,7 +153,7 @@ class HTPT():
     Returns: nothing
 
     """
-    print "htpt: {}".format(data)
+#    print "htpt: {}".format(data)
     self.torSock.send(data)
     return
 
@@ -200,7 +207,7 @@ def processRequest():
     if readyToRead != []:
       # get up to a megabyte
       dataToSend = readyToRead[0].recv(1024*1000)
-      print "Server Sending: {}".format(dataToSend)
+#      print "Server Sending: {}".format(dataToSend)
     else:
       dataToSend = ''
     # put the headers on the data (not the actual function name)
@@ -226,21 +233,33 @@ def serveImage(image):
 def callback(data):
   if data == '':
     return
-  else:
-    print "Received: {}".format(data)
+#  else:
+#    print "Received: {}".format(data)
   htptObject.recvData(data)
   
 if __name__ == '__main__':
   htptObject = HTPT()
   urlEncode.domain = TOR_BRIDGE_ADDRESS
-  if str(sys.argv[1]) == "-client":
+  if str(sys.argv[1]) == "-client" and str(sys.argv[2]) == "0":
+    server = ThreadingSocks4Proxy(ForwardSocksReq, CLIENT_SOCKS_PORT, HTPT_CLIENT_SOCKS_PORT)
+    server.serve_forever()
+  elif str(sys.argv[1]) == "-client" and str(sys.argv[2]) == "1":
     htptObject.run_client()
+  elif str(sys.argv[1]) == "-server" and str(sys.argv[2]) == "0":
+    server = ThreadingSocks4Proxy(ReceiveSocksReq, SERVER_SOCKS_PORT)
+    server.serve_forever()
   else:
     addressList = []
+    # setup the proxy server
     # bind to a local address and wait for Tor to connect
-    htptObject.torBinder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    htptObject.torBinder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    htptObject.torBinder.bind(('localhost', SERVER_LISTEN_PORT))
-    htptObject.torBinder.listen(1)
-    (htptObject.torSock, address) = htptObject.torBinder.accept()
+    # htptObject.torBinder = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # htptObject.torBinder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # htptObject.torBinder.bind(('localhost', SERVER_SOCKS_PORT))
+    # htptObject.torBinder.listen(1)
+    # (htptObject.torSock, address) = htptObject.torBinder.accept()
+    # htptObject.torSock = socks.socksocket()
+    # htptObject.torSock.setproxy(socks.PROXY_TYPE_SOCKS4, "localhost", SERVER_SOCKS_PORT)
+    htptObject.torSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    htptObject.torSock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    htptObject.torSock.connect(("localhost", SERVER_SOCKS_PORT))
     app.run(debug=True, use_reloader=False)
