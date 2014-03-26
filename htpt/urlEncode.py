@@ -66,7 +66,7 @@ def encodeAsCookies(data):
       data = ''
   return cookies
 
-def encodeWithDict(data):
+def encodeAsB64(host, data):
   """
   Hide data inside the Host, path, and query string fields of the URL
 
@@ -75,71 +75,45 @@ def encodeWithDict(data):
   Returns: a string of the url
 
   """
-  # dictionaries for encoding-> these could be negotiated in future
-  # versions
-  tldDict = ['com', 'net', 'ru', 'org', 'de', 'uk', 'jp', 'br',
-             'pl', 'fr', 'in', 'it', 'info', 'cn', 'ir', 'nl',
-             'au', 'es', 'eu', 'ca', 'cz', 'gr', 'mx', 'ua', 
-             'biz', 'co', 'ro', 'tv', 'za', 'tw', 'se', 'ch']
+  # randomly take some data off of the end to be inserted into cookies
+  cookieSplit = randint(0, len(data)/2)
+  cookieData = data[cookieSplit:]
+  cookies = encodeAsCookies(cookieData)
+  data = data[:cookieSplit]
 
-  domainDict = ['google', 'facebook', 'youtube', 'yahoo', 'baidu',
-                'wikipedia', 'qq', 'linkedin', 'live', 'twitter',
-                'amazon', 'taobao', 'blogspot', 'wordpress',
-                'sina', 'yandex', 'bing', 'hao123', 'ebay', 'vk',
-                '163', 'tumblr', 'pinterest', 'msn', 'mail', 'weibo',
-                'microsoft', 'ask', 'paypal', 'instagram', 'soso',
-                'apple', 'blogger', 'imdb', 'tmall', 'craigslist',
-                'sohu', '360', 'go', 'bbc.co', 'stackoverflow', 'cnn',
-                'neobux', 'fc2', 'imgur', 'alibaba', 'flickr',
-                'youku', 'odnoklassniki', 'espn.go', 'google',
-                'ku6', 'people', 'sogou', 'yesky', 'it168',
-                'ifeng', 'china', 'alipay', 'xyxy', 'pcpop',
-                'jrj', 'lady8844', 'jd', 'caijing',
-                'xinhuanet', 'beva', 'bitauto', 'so', 'douban',
-                'hudong', 'chinaz', 'onlylady', '56', 'voc',
-                'yoka', 'tianya', 'pclady', 'cnzz',
-                'pconline', '55bbs', 'baomihua', 'tudou', 'p5w',
-                '39', 'jqw', 'workercn', 'pchome', 'xcar',
-                'zol', 'xgo', 'online', '58', 'aili',
-                'iqiyi', '6', 'rayli', 'amazon', 'ce', 'pengyou',
-                'gamer', 'nextmedia', 'pixnet', 'discuss',
-                'hsbc', 'on', 'blogspot', 'tvb', 'uwants',
-                'hkgolden', 'life', 'hangseng', 'eyny', 'wikia',
-                'hkjc', 'mobile01', 'openrice', 'hko.gov', 'ck101',
-                'ettoday', 'bochk', 'price', 'jobsdb', 'thisav',
-                'aastocks', 'etnet', 'groupon', 'hkepc',
-                'dcfever', 'pcgames', 'getjetso', 'myfreshnet',
-                'kyohk', 'mingpao', 'gamebase', 'yp',
-                'memehk', 'unwire', 'indiatimes', 'flipkart',
-                'rediff', 'olx', 'snapdeal', 'quikr', 'hdfcbank',
-                'espncricinfo', 'ndtv', 'naukri', 'intoday',
-                'icicibank', 'stumbleupon', 'justdial', 'jabong',
-                'irctc.co', 'onlinesbi', 'bhaskar', 'myntra',
-                'slideshare', 'about', 'oneindia', 'moneycontrol',
-                'indianrail.gov', 'w3schools', 'airtel', 'shopclues',
-                'sulekha', 'tradus', 'way2sms', 'reddit',
-                'themeforest', 'wikihow', 'dailymotion', 'billdesk',
-                'adf', 'homeshop18', 'makemytrip', 'cnet', 'popads',
-                'qvo6', 'quora', 'gsmarena', 'secureserver',
-                'bookmyshow', 'thehindu', 'junglee', 'indiamart',
-                'admagnet', 'weebly', 'rakuten.co', 'ameblo',
-                'livedoor', 'nicovideo', 'goo.ne', 'naver', 'kakaku',
-                'ameba', 'doorblog', '2ch', 'hatena.ne', 'seesaa',
-                'tabelog', 'nifty', 'sakura.ne', 'pixiv', 'okwave',
-                'biglobe.ne', 'yomiuri.co', 'nikkei', 'exblog',
-                'excite.co', 'mixi', 'ocn.ne', 'lenovo', 'geocities',
-                'dtiblog', 'cookpad', 'enet', 'asahi', 'nhk.or',
-                'sponichi.co', 'japanpost', 'weblio', 'atwiki',
-                'ldblog', 'mynavi', 'nikkeibp.co', 'daily.co',
-                'jalan', 'nikkansports', 'gnavi.co', 'blogmura',
-                'itmedia.co', 'jugem', 'impress.co', 'allabout.co',
-                'hotpepper', 'mercadolibre', 'eluniversal',
-                'taringa', 'vube', 'mediotiempo', 'unam',
-                'bancomer', 'milenio', 'netflix', 'banamex',
-                'wordreference', 'hootsuite', 'adcash', 'proceso',
-                'bbvanet', 'adf', 'sdpnoticias', 'banorte',
-                'hsbc']
-  print "tld: {} domain: {}".format(len(tldDict), len(domainDict))
+  # base 64 encode the data
+  encoded = urlsafe_b64encode(data)
+  encoded.replace("=", ".")
+
+  # divide it into path and query string
+  split = randint(0, len(encoded)-1)
+  path = encoded[:split]
+  query = encoded[split:]
+  
+  # randomly insert /'s into the path
+  numSplits = randint(0, 15)
+  if numSplits > len(data)/2:
+    numSplits = len(data)/5
+  for loc in range(numSplits):
+    location = randint(1, len(path)-1)
+    path = path[:location] + "/" + path[:location]
+  # randomly insert ; and = into the query string
+  numSplits = randint(0, 15)
+  if numSplits > len(data)/2:
+    numSplits = len(data)/8
+  for cap in range(numSplits):
+    location = randint(0, (len(data)/numSplits))
+    if cap == numSplits - 1:
+      query = query[location:] + "=" + query[:location]
+      break
+    difference = randint(0, (len(data)/numSplits) -location)
+    equalPos = cap* len(data)/numSplits
+    var = equalPos + difference
+    query = query[:equalPos] + "=" + query[equalPos:var] + ";" + query[var:]
+
+  url = "http://" + host + "/" + path + "?" + query
+  encodedData = {'url':url, 'cookie':cookies}
+  return encodedData
 
 def encodeAsCookie(data):
   """
@@ -429,7 +403,28 @@ def decodeAsMarket(url):
   data = binascii.unhexlify(data)
   return data
 
+def decodeWithB64(data):
+  """
+  Decode the given data as b64 encoded with path and query string
+  stuff added
+
+  """
+  pattern = '/(?<path>[\S]+)\?(?<query>[\S]+)'
+  matches = re.search(pattern, url)
+  path = matches.group('path')
+  query = matches.group('query')
+
+  # string out the encoding characters and decode the data
+  path.replace("/", "")
+  query.replace(";", "")
+  query.replace("=", "")
+  encoded = path + query
+  encoded.replace(".", "=")
+  data = urlsafe_b64decode(encoded)
+  return data
+
 def decode(protocolUnit):
+
   """
   Decode the given data after matching the url hiding format
 
@@ -448,7 +443,8 @@ def decode(protocolUnit):
   elif isBaidu(url):
     data.append(decodeAsBaidu(url))
   else:
-    raise UrlEncodeError("Data does not match a known decodable type")
+    data.append(encodeAsB64(url))
+#    raise UrlEncodeError("Data does not match a known decodable type")
   for cookie in cookies:
     data.append(decodeAsCookie(cookie))
   return ''.join(data)
