@@ -66,6 +66,81 @@ def encodeAsCookies(data):
       data = ''
   return cookies
 
+def encodeWithDict(data):
+  """
+  Hide data inside the Host, path, and query string fields of the URL
+
+  Parameters: data- a string with the data to encode
+
+  Returns: a string of the url
+
+  """
+  # dictionaries for encoding-> these could be negotiated in future
+  # versions
+  tldDict = ['com', 'net', 'ru', 'org', 'de', 'uk', 'jp', 'br',
+             'pl', 'fr', 'in', 'it', 'info', 'cn', 'ir', 'nl',
+             'au', 'es', 'eu', 'ca', 'cz', 'gr', 'mx', 'ua', 
+             'biz', 'co', 'ro', 'tv', 'za', 'tw', 'se', 'ch']
+
+  domainDict = ['google', 'facebook', 'youtube', 'yahoo', 'baidu',
+                'wikipedia', 'qq', 'linkedin', 'live', 'twitter',
+                'amazon', 'taobao', 'blogspot', 'wordpress',
+                'sina', 'yandex', 'bing', 'hao123', 'ebay', 'vk',
+                '163', 'tumblr', 'pinterest', 'msn', 'mail', 'weibo',
+                'microsoft', 'ask', 'paypal', 'instagram', 'soso',
+                'apple', 'blogger', 'imdb', 'tmall', 'craigslist',
+                'sohu', '360', 'go', 'bbc.co', 'stackoverflow', 'cnn',
+                'neobux', 'fc2', 'imgur', 'alibaba', 'flickr',
+                'youku', 'odnoklassniki', 'espn.go', 'google',
+                'ku6', 'people', 'sogou', 'yesky', 'it168',
+                'ifeng', 'china', 'alipay', 'xyxy', 'pcpop',
+                'jrj', 'lady8844', 'jd', 'caijing',
+                'xinhuanet', 'beva', 'bitauto', 'so', 'douban',
+                'hudong', 'chinaz', 'onlylady', '56', 'voc',
+                'yoka', 'tianya', 'pclady', 'cnzz',
+                'pconline', '55bbs', 'baomihua', 'tudou', 'p5w',
+                '39', 'jqw', 'workercn', 'pchome', 'xcar',
+                'zol', 'xgo', 'online', '58', 'aili',
+                'iqiyi', '6', 'rayli', 'amazon', 'ce', 'pengyou',
+                'gamer', 'nextmedia', 'pixnet', 'discuss',
+                'hsbc', 'on', 'blogspot', 'tvb', 'uwants',
+                'hkgolden', 'life', 'hangseng', 'eyny', 'wikia',
+                'hkjc', 'mobile01', 'openrice', 'hko.gov', 'ck101',
+                'ettoday', 'bochk', 'price', 'jobsdb', 'thisav',
+                'aastocks', 'etnet', 'groupon', 'hkepc',
+                'dcfever', 'pcgames', 'getjetso', 'myfreshnet',
+                'kyohk', 'mingpao', 'gamebase', 'yp',
+                'memehk', 'unwire', 'indiatimes', 'flipkart',
+                'rediff', 'olx', 'snapdeal', 'quikr', 'hdfcbank',
+                'espncricinfo', 'ndtv', 'naukri', 'intoday',
+                'icicibank', 'stumbleupon', 'justdial', 'jabong',
+                'irctc.co', 'onlinesbi', 'bhaskar', 'myntra',
+                'slideshare', 'about', 'oneindia', 'moneycontrol',
+                'indianrail.gov', 'w3schools', 'airtel', 'shopclues',
+                'sulekha', 'tradus', 'way2sms', 'reddit',
+                'themeforest', 'wikihow', 'dailymotion', 'billdesk',
+                'adf', 'homeshop18', 'makemytrip', 'cnet', 'popads',
+                'qvo6', 'quora', 'gsmarena', 'secureserver',
+                'bookmyshow', 'thehindu', 'junglee', 'indiamart',
+                'admagnet', 'weebly', 'rakuten.co', 'ameblo',
+                'livedoor', 'nicovideo', 'goo.ne', 'naver', 'kakaku',
+                'ameba', 'doorblog', '2ch', 'hatena.ne', 'seesaa',
+                'tabelog', 'nifty', 'sakura.ne', 'pixiv', 'okwave',
+                'biglobe.ne', 'yomiuri.co', 'nikkei', 'exblog',
+                'excite.co', 'mixi', 'ocn.ne', 'lenovo', 'geocities',
+                'dtiblog', 'cookpad', 'enet', 'asahi', 'nhk.or',
+                'sponichi.co', 'japanpost', 'weblio', 'atwiki',
+                'ldblog', 'mynavi', 'nikkeibp.co', 'daily.co',
+                'jalan', 'nikkansports', 'gnavi.co', 'blogmura',
+                'itmedia.co', 'jugem', 'impress.co', 'allabout.co',
+                'hotpepper', 'mercadolibre', 'eluniversal',
+                'taringa', 'vube', 'mediotiempo', 'unam',
+                'bancomer', 'milenio', 'netflix', 'banamex',
+                'wordreference', 'hootsuite', 'adcash', 'proceso',
+                'bbvanet', 'adf', 'sdpnoticias', 'banorte',
+                'hsbc']
+  print "tld: {} domain: {}".format(len(tldDict), len(domainDict))
+
 def encodeAsCookie(data):
   """
   Hide data inside a cookie
